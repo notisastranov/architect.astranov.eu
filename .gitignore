@@ -20,3 +20,5 @@ artifacts/
 !.env.example
 .project_id
 .node_modules.lock
+AGENTS.md
+startup.sh

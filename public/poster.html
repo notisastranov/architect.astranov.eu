@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astranov Architect BIMCAD — Product Poster</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0c0d0e;
+        --fg: #ecece8;
+        --muted: #8c9088;
+        --subtle: #5c605a;
+        --line: #2a2d32;
+        --line-2: #3a4046;
+        --sage: #b8c4bc;
+        --snap: #7ec8c0;
+        --paper: #ecece8;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        background: #050506;
+        color: var(--fg);
+        font-family: "IBM Plex Sans", ui-sans-serif, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      @page { size: A3 portrait; margin: 0; }
+      body { display: flex; justify-content: center; padding: 24px 0; }
+      .sheet {
+        width: 1123px;
+        height: 1588px;
+        background: var(--bg);
+        color: var(--fg);
+        position: relative;
+        overflow: hidden;
+        padding: 28px;
+      }
+      .frame {
+        height: 100%;
+        border: 1px solid var(--line-2);
+        display: grid;
+        grid-template-rows: 64px 1fr 196px 52px;
+      }
+      .tick {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border: 1px solid var(--sage);
+      }
+      .tick.tl { top: 21px; left: 21px; border-right: 0; border-bottom: 0; }
+      .tick.tr { top: 21px; right: 21px; border-left: 0; border-bottom: 0; }
+      .tick.bl { bottom: 21px; left: 21px; border-right: 0; border-top: 0; }
+      .tick.br { bottom: 21px; right: 21px; border-left: 0; border-top: 0; }
+
+      .titleblock {
+        display: grid;
+        grid-template-columns: 64px 1.4fr 1fr 0.9fr 0.7fr;
+        border-bottom: 1px solid var(--line-2);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .titleblock > div {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        padding: 0 16px;
+        border-right: 1px solid var(--line);
+      }
+      .titleblock > div:last-child { border-right: 0; }
+      .mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--sage);
+        border-right: 1px solid var(--line);
+      }
+      .tb-k { color: var(--subtle); font-size: 8px; letter-spacing: 0.2em; }
+      .tb-v { color: var(--fg); font-size: 11px; letter-spacing: 0.12em; }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        min-height: 0;
+      }
+      .copy {
+        padding: 36px 32px 28px;
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+      }
+      .eyebrow {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 0.28em;
+        color: var(--snap);
+        text-transform: uppercase;
+      }
+      h1 {
+        margin-top: 18px;
+        font-weight: 500;
+        font-size: 58px;
+        line-height: 0.92;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+      h1 span { display: block; color: var(--sage); font-weight: 400; }
+      .lede {
+        margin-top: 22px;
+        max-width: 18em;
+        font-size: 16px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .spec-list {
+        margin-top: auto;
+        display: grid;
+        gap: 10px;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        color: var(--fg);
+      }
+      .spec-list div {
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+      }
+      .spec-list dt { color: var(--snap); letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px; }
+
+      .stage {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .stage img.hero-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 55% 42%;
+      }
+      .stage::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(12,13,14,0.18), transparent 18%),
+          linear-gradient(180deg, transparent 72%, rgba(12,13,14,0.55));
+        pointer-events: none;
+      }
+      .cap {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 16px;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--paper);
+      }
+      .inset {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        width: 196px;
+        height: 128px;
+        z-index: 1;
+        border: 1px solid color-mix(in srgb, var(--sage) 45%, transparent);
+        overflow: hidden;
+      }
+      .inset img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 30% 40%;
+      }
+      .inset span {
+        position: absolute;
+        left: 8px;
+        bottom: 6px;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 8px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--paper);
+        text-shadow: 0 1px 8px #000;
+      }
+
+      .disciplines {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid var(--line-2);
+      }
+      .disciplines article {
+        padding: 22px 22px 18px;
+        border-right: 1px solid var(--line);
+      }
+      .disciplines article:last-child { border-right: 0; }
+      .disciplines .idx {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        color: var(--snap);
+      }
+      .disciplines h2 {
+        margin-top: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .disciplines p {
+        margin-top: 10px;
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+
+      .foot {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 0.8fr;
+        border-top: 1px solid var(--line-2);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .foot > div {
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        border-right: 1px solid var(--line);
+      }
+      .foot > div:last-child { border-right: 0; justify-content: flex-end; color: var(--sage); }
+      .foot a { color: var(--fg); text-decoration: none; }
+
+      @media print {
+        body { padding: 0; background: var(--bg); }
+        .sheet { width: 297mm; height: 420mm; }
+      }
+    </style>
+  </head>
+  <body>
+    <article class="sheet">
+      <span class="tick tl"></span>
+      <span class="tick tr"></span>
+      <span class="tick bl"></span>
+      <span class="tick br"></span>
+      <div class="frame">
+        <header class="titleblock">
+          <div class="mark" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+              <rect x="4" y="12" width="24" height="15" stroke="currentColor" stroke-width="1.6" />
+              <path d="M4 12 L16 5 L28 12" stroke="currentColor" stroke-width="1.6" />
+              <path d="M16 5 V27" stroke="currentColor" stroke-width="1.4" />
+              <path d="M10 19 H22" stroke="currentColor" stroke-width="1.4" />
+            </svg>
+          </div>
+          <div>
+            <span class="tb-k">Practice</span>
+            <span class="tb-v">Astranov Cybernetics</span>
+          </div>
+          <div>
+            <span class="tb-k">Drawing</span>
+            <span class="tb-v">Poster-01 · Product</span>
+          </div>
+          <div>
+            <span class="tb-k">Sheet</span>
+            <span class="tb-v">A3 · 1 / 1</span>
+          </div>
+          <div>
+            <span class="tb-k">Date</span>
+            <span class="tb-v">02.09.2026</span>
+          </div>
+        </header>
+
+        <section class="hero">
+          <div class="copy">
+            <p class="eyebrow">Astranov Architect</p>
+            <h1>BIMCAD<span>millimetre true.</span></h1>
+            <p class="lede">
+              Computer-aided design and building information modelling for architects, mechanics, topographers and surveyors.
+            </p>
+            <dl class="spec-list">
+              <div>
+                <dt>Kernel</dt>
+                <dd>1 millimetre world units</dd>
+              </div>
+              <div>
+                <dt>Snap</dt>
+                <dd>End · mid · intersection · grid · ortho</dd>
+              </div>
+              <div>
+                <dt>BIM</dt>
+                <dd>IFC walls, slabs, rooms, quantities</dd>
+              </div>
+              <div>
+                <dt>AI</dt>
+                <dd>Natural language into geometry</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="stage">
+            <img class="hero-img" src="/poster/hero.jpg" alt="Exploded BIM of a civic hall on a millimetre grid" />
+            <div class="inset">
+              <img src="/poster/massing.jpg" alt="Physical massing model and mechanical plate" />
+              <span>Fig. 02 · Massing / plate</span>
+            </div>
+            <div class="cap">
+              <span>Fig. 01 · Exploded BIM · Court House</span>
+              <span>Wall 200 mm · Slab 200 mm</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="disciplines">
+          <article>
+            <div class="idx">01</div>
+            <h2>Architecture</h2>
+            <p>Parametric walls with openings. Rooms, slabs and live quantities. Title-blocked sheets.</p>
+          </article>
+          <article>
+            <div class="idx">02</div>
+            <h2>Mechanical</h2>
+            <p>Plates, holes and ISO-style blocks. Shop drawings at millimetre shop tolerance.</p>
+          </article>
+          <article>
+            <div class="idx">03</div>
+            <h2>Survey</h2>
+            <p>Stations, traverse and inverse. Easting, northing, azimuth and bearing.</p>
+          </article>
+          <article>
+            <div class="idx">04</div>
+            <h2>Topography</h2>
+            <p>Coordinate truth on the same kernel. Grid, polar entry, geodetic notes.</p>
+          </article>
+        </section>
+
+        <footer class="foot">
+          <div>Astranov Architect BIMCAD</div>
+          <div><a href="https://architect.astranov.eu">architect.astranov.eu</a></div>
+          <div>Rhodes · 12.04.2026</div>
+        </footer>
+      </div>
+    </article>
+  </body>
+</html>

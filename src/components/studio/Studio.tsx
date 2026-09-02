@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Download,
+  FileImage,
   HelpCircle,
   Layers,
   Maximize2,
@@ -51,6 +52,7 @@ export function Studio() {
   const helpOpen = useCad((s) => s.helpOpen);
   const aiOpen = useCad((s) => s.aiOpen);
   const [mobileDock, setMobileDock] = useState(false);
+  const [posterOpen, setPosterOpen] = useState(false);
 
   useEffect(() => {
     void useCad.persist.rehydrate();
@@ -124,7 +126,7 @@ export function Studio() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-fg">
-      <TopBar onMobileDock={() => setMobileDock(true)} />
+      <TopBar onMobileDock={() => setMobileDock(true)} onPoster={() => setPosterOpen(true)} />
       <div className="flex min-h-0 flex-1">
         <div className="hidden w-12 shrink-0 border-r border-border bg-surface md:block">
           <Toolbar orientation="vertical" />
@@ -195,13 +197,14 @@ export function Studio() {
         </div>
       )}
 
-      {projectsOpen && <ProjectsOverlay />}
+      {projectsOpen && <ProjectsOverlay onPoster={() => setPosterOpen(true)} />}
       {helpOpen && <HelpOverlay />}
+      {posterOpen && <PosterOverlay onClose={() => setPosterOpen(false)} />}
     </div>
   );
 }
 
-function TopBar({ onMobileDock }: { onMobileDock: () => void }) {
+function TopBar({ onMobileDock, onPoster }: { onMobileDock: () => void; onPoster: () => void }) {
   const project = useCad((s) => s.project);
   const view = useCad((s) => s.view);
   const setView = useCad((s) => s.setView);
@@ -253,6 +256,9 @@ function TopBar({ onMobileDock }: { onMobileDock: () => void }) {
         <div className="hidden sm:contents">
           <ExportMenu />
         </div>
+        <IconBtn label="Product poster" onClick={onPoster} className="hidden sm:flex">
+          <FileImage className="size-4" />
+        </IconBtn>
         <IconBtn label="Inspector" onClick={onMobileDock} className="lg:hidden">
           <Layers className="size-4" />
         </IconBtn>
@@ -364,7 +370,7 @@ function ExportMenu() {
   );
 }
 
-function ProjectsOverlay() {
+function ProjectsOverlay({ onPoster }: { onPoster: () => void }) {
   const load = useCad((s) => s.loadProject);
   const neu = useCad((s) => s.newProject);
   const project = useCad((s) => s.project);
@@ -430,6 +436,14 @@ function ProjectsOverlay() {
           >
             Export CSV
           </Ghost>
+          <Ghost
+            onClick={() => {
+              useCad.getState().setProjectsOpen(false);
+              onPoster();
+            }}
+          >
+            Product poster
+          </Ghost>
         </div>
       </div>
     </div>
@@ -487,6 +501,50 @@ function HelpOverlay() {
             </div>
           ))}
         </dl>
+      </div>
+    </div>
+  );
+}
+
+function PosterOverlay({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      <button type="button" className="absolute inset-0 bg-bg/85" aria-label="Close poster" onClick={onClose} />
+      <div className="relative flex max-h-[94dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-xl bg-surface sm:rounded-xl">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div>
+            <div className="font-mono text-[10px] tracking-[0.18em] text-subtle">A3 · POSTER-01</div>
+            <h2 className="text-base font-medium">Astranov Architect BIMCAD</h2>
+          </div>
+          <div className="flex items-center gap-1">
+            <a
+              href="/poster.png"
+              download="Astranov-Architect-BIMCAD-poster.png"
+              className="flex size-10 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-fg"
+              title="Download PNG"
+            >
+              <Download className="size-4" />
+            </a>
+            <a
+              href="/poster.html"
+              target="_blank"
+              rel="noreferrer"
+              className="hidden rounded-sm px-3 py-2 font-mono text-[10px] tracking-wide text-muted uppercase hover:bg-elevated hover:text-fg sm:inline"
+            >
+              Print sheet
+            </a>
+            <button type="button" onClick={onClose} className="size-10 text-muted" aria-label="Close">
+              <X className="mx-auto size-4" />
+            </button>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto bg-bg px-3 pb-4">
+          <img
+            src="/poster.png"
+            alt="Astranov Architect BIMCAD product poster"
+            className="mx-auto w-full max-w-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+          />
+        </div>
       </div>
     </div>
   );
