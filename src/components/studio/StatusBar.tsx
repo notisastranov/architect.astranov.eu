@@ -13,19 +13,30 @@ export function StatusBar() {
   const setUnits = useCad((s) => s.setUnits);
   const cam = useCad((s) => s.cam);
   const project = useCad((s) => s.project);
+  const view = useCad((s) => s.view);
+  const globe = useCad((s) => s.globe);
 
-  const x = hover ? formatMmNum(hover.x, units) : "—";
-  const y = hover ? formatMmNum(hover.y, units) : "—";
+  const x = hover ? formatMmNum(hover.x, units) : "\u2014";
+  const y = hover ? formatMmNum(hover.y, units) : "\u2014";
   const scale = cam.zoom > 0 ? Math.round(96 / 25.4 / cam.zoom) : 0;
 
   return (
     <div className="flex h-[var(--height-status)] min-w-0 shrink-0 items-center gap-2 overflow-x-auto border-t border-border bg-bg px-2 font-mono text-[10px] text-muted">
-      <span className="tabular shrink-0">
-        E {x}
-        <span className="text-subtle"> · </span>
-        N {y}
-        <span className="text-subtle"> {units}</span>
-      </span>
+      {view === "globe" ? (
+        <span className="tabular shrink-0">
+          {globe.lat.toFixed(4)}°
+          <span className="text-subtle"> · </span>
+          {globe.lon.toFixed(4)}°
+          <span className="text-subtle"> · {globe.layer === "BASEMAP" ? "KTBASEMAP" : "EARTH"}</span>
+        </span>
+      ) : (
+        <span className="tabular shrink-0">
+          E {x}
+          <span className="text-subtle"> · </span>
+          N {y}
+          <span className="text-subtle"> {units}</span>
+        </span>
+      )}
       <span className="hidden shrink-0 text-subtle sm:inline">{snapHit ? snapHit.type.toUpperCase() : "FREE"}</span>
       <span className="ml-auto flex shrink-0 items-center gap-1">
         <Toggle on={ortho} onClick={() => setOrtho(!ortho)} label="ORTHO" />
@@ -43,7 +54,7 @@ export function StatusBar() {
           <option value="m">m</option>
           <option value="ft">ft</option>
         </select>
-        <span className="hidden tabular text-subtle md:inline">1:{scale || "—"}</span>
+        <span className="hidden tabular text-subtle md:inline">{view === "globe" ? "WGS84" : `1:${scale || "\u2014"}`}</span>
         <span className="hidden tabular text-subtle lg:inline">{project.entities.length} ent</span>
       </span>
     </div>
