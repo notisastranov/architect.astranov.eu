@@ -16,17 +16,17 @@ export function StatusBar() {
   const view = useCad((s) => s.view);
   const globe = useCad((s) => s.globe);
 
-  const x = hover ? formatMmNum(hover.x, units) : "\u2014";
-  const y = hover ? formatMmNum(hover.y, units) : "\u2014";
+  const x = hover ? formatMmNum(hover.x, units) : "-";
+  const y = hover ? formatMmNum(hover.y, units) : "-";
   const scale = cam.zoom > 0 ? Math.round(96 / 25.4 / cam.zoom) : 0;
 
   return (
     <div className="flex h-[var(--height-status)] min-w-0 shrink-0 items-center gap-2 overflow-x-auto border-t border-border bg-bg px-2 font-mono text-[10px] text-muted">
       {view === "globe" ? (
         <span className="tabular shrink-0">
-          {globe.lat.toFixed(4)}°
+          {globe.lat.toFixed(4)} deg
           <span className="text-subtle"> · </span>
-          {globe.lon.toFixed(4)}°
+          {globe.lon.toFixed(4)} deg
           <span className="text-subtle"> · {globe.layer === "BASEMAP" ? "KTBASEMAP" : "EARTH"}</span>
         </span>
       ) : (
@@ -43,41 +43,22 @@ export function StatusBar() {
         <Toggle on={snap.grid} onClick={() => setSnap({ grid: !snap.grid })} label="GRID" />
         <Toggle on={snap.end} onClick={() => setSnap({ end: !snap.end })} label="END" />
         <Toggle on={snap.mid} onClick={() => setSnap({ mid: !snap.mid })} label="MID" />
-        <select
-          value={units}
-          onChange={(e) => setUnits(e.target.value as typeof units)}
-          className="h-5 rounded-xs bg-transparent text-[10px] text-muted outline-none"
-          aria-label="Units"
-        >
+        <select value={units} onChange={(e) => setUnits(e.target.value as typeof units)} className="h-5 rounded-xs bg-transparent text-[10px] text-muted outline-none" aria-label="Units">
           <option value="mm">mm</option>
           <option value="cm">cm</option>
           <option value="m">m</option>
           <option value="ft">ft</option>
         </select>
-        <span className="hidden tabular text-subtle md:inline">{view === "globe" ? "WGS84" : `1:${scale || "\u2014"}`}</span>
+        <span className="hidden tabular text-subtle md:inline">{view === "globe" ? "WGS84" : `1:${scale || "-"}`}</span>
         <span className="hidden tabular text-subtle lg:inline">{project.entities.length} ent</span>
       </span>
     </div>
   );
 }
 
-function Toggle({
-  on,
-  onClick,
-  label,
-  className,
-}: {
-  on: boolean;
-  onClick: () => void;
-  label: string;
-  className?: string;
-}) {
+function Toggle({ on, onClick, label, className }: { on: boolean; onClick: () => void; label: string; className?: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn("rounded-xs px-1.5 py-0.5 tracking-wider", on ? "text-primary" : "text-subtle", className)}
-    >
+    <button type="button" onClick={onClick} className={cn("rounded-xs px-1.5 py-0.5 tracking-wider", on ? "text-primary" : "text-subtle", className)}>
       {label}
     </button>
   );
