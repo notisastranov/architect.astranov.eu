@@ -8,6 +8,7 @@ import type {
   Discipline,
   Draft,
   Entity,
+  GlobeState,
   Id,
   Project,
   Pt,
@@ -20,6 +21,14 @@ import type {
 
 const MAX_HIST = 40;
 
+const DEFAULT_GLOBE: GlobeState = {
+  lat: 36.434,
+  lon: 28.217,
+  alt: 215,
+  layer: "BASEMAP",
+  flyNonce: 0,
+};
+
 export interface CadState {
   project: Project;
   past: Project[];
@@ -31,6 +40,7 @@ export interface CadState {
   ortho: boolean;
   units: UnitSystem;
   view: ViewMode;
+  globe: GlobeState;
   cam: { x: number; y: number; zoom: number };
   hover: Pt | null;
   snapHit: SnapHit | null;
@@ -49,6 +59,7 @@ export interface CadState {
 
   setTool: (t: Tool) => void;
   setView: (v: ViewMode) => void;
+  setGlobe: (p: Partial<GlobeState>) => void;
   setOrtho: (v: boolean) => void;
   setSnap: (p: Partial<SnapConfig>) => void;
   setUnits: (u: UnitSystem) => void;
@@ -102,12 +113,13 @@ export const useCad = create<CadState>()(
       snap: { grid: true, end: true, mid: true, center: true, int: true },
       ortho: true,
       units: "m",
-      view: "plan",
+      view: "globe",
+      globe: { ...DEFAULT_GLOBE },
       cam: { x: 6000, y: 3500, zoom: 0.06 },
       hover: null,
       snapHit: null,
       command: "",
-      status: "Court House loaded. Wall · Door · AI, or type a command.",
+      status: "Earth · wheel into Greece for Ελληνικό Κτηματολόγιο layers.",
       prompt: "",
       aiOpen: false,
       aiBusy: false,
@@ -125,7 +137,15 @@ export const useCad = create<CadState>()(
           draft: t === "select" || t === "pan" ? null : { tool: t, points: [] },
           status: toolStatus(t),
         }),
-      setView: (v) => set({ view: v }),
+      setView: (v) =>
+        set({
+          view: v,
+          status:
+            v === "globe"
+              ? "Earth · wheel into Greece for Ελληνικό Κτηματολόγιο layers."
+              : get().status,
+        }),
+      setGlobe: (p) => set({ globe: { ...get().globe, ...p } }),
       setOrtho: (v) => set({ ortho: v }),
       setSnap: (p) => set({ snap: { ...get().snap, ...p } }),
       setUnits: (u) => set({ units: u, project: { ...get().project, units: u } }),
@@ -241,7 +261,15 @@ export const useCad = create<CadState>()(
         });
         return result;
       },
-      zoomExtents: () => set({ dirtyFit: true, fitNonce: get().fitNonce + 1 }),
+      zoomExtents: () => {
+        if (get().view === "globe") {
+          set({
+            globe: { ...get().globe, flyNonce: get().globe.flyNonce + 1, lat: 36.434, lon: 28.217 },
+          });
+          return;
+        }
+        set({ dirtyFit: true, fitNonce: get().fitNonce + 1 });
+      },
       requestFit: () => {
         const ext = projectExtents(get().project);
         if (!ext) {
@@ -251,7 +279,7 @@ export const useCad = create<CadState>()(
         set({ dirtyFit: false });
       },
     }),
-        {
+    {
       name: "astranov-bimcad-v1",
       skipHydration: true,
       partialize: (s) => ({
@@ -260,7 +288,7 @@ export const useCad = create<CadState>()(
         ortho: s.ortho,
         units: s.units,
         cam: s.cam,
-        view: s.view,
+        globe: { ...s.globe, flyNonce: 0 },
       }),
     },
   ),
