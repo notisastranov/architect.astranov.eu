@@ -1,6 +1,7 @@
 export type Discipline = "architecture" | "mechanical" | "survey";
 export type UnitSystem = "mm" | "cm" | "m" | "ft";
-export type ViewMode = "plan" | "model" | "split";
+export type ViewMode = "globe" | "plan" | "model" | "split";
+export type GlobeLayer = "BASEMAP" | "off";
 export type Tool =
   | "select"
   | "pan"
@@ -23,6 +24,14 @@ export type Id = string;
 export interface Pt {
   x: number;
   y: number;
+}
+
+export interface GlobeState {
+  lat: number;
+  lon: number;
+  alt: number;
+  layer: GlobeLayer;
+  flyNonce: number;
 }
 
 export interface Layer {

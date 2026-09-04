@@ -24,7 +24,14 @@ export function CommandBar() {
     if (cmd === "u" || cmd === "undo") st.undo();
     else if (cmd === "redo") st.redo();
     else if (cmd === "z" || cmd === "zoom" || cmd === "zoom e" || cmd === "extents") st.zoomExtents();
-    else if (cmd === "ortho") st.setOrtho(!st.ortho);
+    else if (cmd === "globe" || cmd === "earth" || cmd === "world") st.setView("globe");
+    else if (cmd === "rhodes") {
+      st.setView("globe");
+      st.setGlobe({ lat: 36.434, lon: 28.217, flyNonce: st.globe.flyNonce + 1 });
+    } else if (cmd === "ktima" || cmd === "ktimatologio") {
+      st.setView("globe");
+      st.setGlobe({ layer: "BASEMAP", flyNonce: st.globe.flyNonce + 1 });
+    } else if (cmd === "ortho") st.setOrtho(!st.ortho);
     else if (cmd.startsWith("units ")) {
       const u = cmd.slice(6).trim();
       if (u === "mm" || u === "cm" || u === "m" || u === "ft") st.setUnits(u);
