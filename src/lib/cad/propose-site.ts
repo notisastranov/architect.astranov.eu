@@ -1,0 +1,2 @@
+export const SITE_PROPOSE_PROMPT =
+  "Design the development and the building on this real topographic site. Keep the work on our own property. Use addRectRoom and addWall in millimetres for a finished residential villa with living, kitchen, two bedrooms, terrace toward the view, and stone or brick walls. Add survey stations at the plot corners. Dimension the exterior. Short architectural declaration in the message.";
