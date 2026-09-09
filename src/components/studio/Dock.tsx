@@ -1,15 +1,7 @@
-import { useMemo, useState } from "react";
-import { Eye, EyeOff, Lock, LockOpen, Sparkles } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCad } from "@/lib/cad/store";
-import { askDatum } from "@/lib/cad/ask-datum";
-import { compactModel, inverse, quantities } from "@/lib/cad/quantities";
-import { formatArea, formatMm, formatMmNum } from "@/lib/cad/units";
-import { azimuthDeg, dist, formatDms, polygonArea, wallLength } from "@/lib/cad/geometry";
-import type { AiOp, Entity, SurveyEnt, UnitSystem } from "@/lib/cad/types";
-import { MATERIALS } from "@/lib/cad/types";
 import { MapsPanel } from "./MapsPanel";
+import { AiPanel, Layers, Properties, Quantities, Survey } from "./DockPanels";
 
 const TABS = ["properties", "layers", "maps", "quantities", "survey", "ai"] as const;
 
@@ -45,3 +37,5 @@ export function Dock() {
     </aside>
   );
 }
+
+export { AiPanel } from "./DockPanels";
