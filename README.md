@@ -39,3 +39,15 @@ Set these on the Vercel project (never commit them):
 |---|---|---|
 | `XAI_API_KEY` | for AI draughtsman | xAI chat — user-initiated only |
 | `VITE_AUTH_ENABLED` | `false` | this studio has no accounts |
+
+## Historical Italian sheets
+
+BIMCAD can collage old IGM / catasto scans (the big quadro d'unione plus the small tavolette) and lock them onto today's Ktimatologio / globe.
+
+1. Open the **Maps** dock tab or type `overlay`.
+2. Import the parent sheet and the singles.
+3. Type `collage` to assemble them at printed scale (`1:25000`, `1:2000`, …).
+4. Type `georef`, click a church or road fork on the old scan, then the same point on the modern plan — or type `lon,lat`. Two points scale, rotate and place the collage so particelle sit on live ground.
+5. Zoom the globe: registered sheets carry geographic bounds for draping over Rhodes / Greece orthophoto.
+
+Commands: `overlay`, `collage`, `georef`, `1:25000`, `rodi`.
