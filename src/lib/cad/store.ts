@@ -3,6 +3,17 @@ import { persist } from "zustand/middleware";
 import { cloneProject, nid, projectExtents } from "./geometry";
 import { applyOps, type ApplyResult } from "./ops";
 import { blankProject, sampleArchitecture } from "./samples";
+import {
+  applyPrintedScale,
+  assembleCollage,
+  forgetOverlayImage,
+  geoFromGcps,
+  rememberOverlayImage,
+  sheetFromFile,
+  type OverlayGcp,
+  type OverlayMode,
+  type OverlaySheet,
+} from "@/lib/gis/overlay";
 import type {
   AiOp,
   Discipline,
@@ -53,9 +64,13 @@ export interface CadState {
   inspectOpen: boolean;
   helpOpen: boolean;
   projectsOpen: boolean;
-  rightTab: "properties" | "layers" | "quantities" | "survey" | "ai";
+  rightTab: "properties" | "layers" | "quantities" | "survey" | "ai" | "maps";
   fitNonce: number;
   dirtyFit: boolean;
+  overlays: OverlaySheet[];
+  overlayMode: OverlayMode;
+  activeOverlayId: string | null;
+  pendingGcp: { imgX: number; imgY: number } | null;
 
   setTool: (t: Tool) => void;
   setView: (v: ViewMode) => void;
@@ -91,6 +106,17 @@ export interface CadState {
   applyAi: (ops: AiOp[]) => ApplyResult;
   zoomExtents: () => void;
   requestFit: () => void;
+
+  importOverlayFiles: (files: File[]) => Promise<void>;
+  patchOverlay: (id: string, patch: Partial<OverlaySheet>) => void;
+  removeOverlay: (id: string) => void;
+  setActiveOverlay: (id: string | null) => void;
+  setOverlayMode: (m: OverlayMode) => void;
+  collageOverlays: () => void;
+  scaleOverlay: (id: string, printedScale: number, dpi?: number) => void;
+  addOverlayGcp: (id: string, gcp: OverlayGcp) => void;
+  setPendingGcp: (p: { imgX: number; imgY: number } | null) => void;
+  finishGcp: (world: Pt, geo?: { lon: number; lat: number }) => void;
 }
 
 function pushHist(s: CadState, next: Project): Pick<CadState, "project" | "past" | "future"> {
@@ -130,6 +156,10 @@ export const useCad = create<CadState>()(
       rightTab: "properties",
       fitNonce: 1,
       dirtyFit: true,
+      overlays: [],
+      overlayMode: "idle",
+      activeOverlayId: null,
+      pendingGcp: null,
 
       setTool: (t) =>
         set({
@@ -277,6 +307,132 @@ export const useCad = create<CadState>()(
           return;
         }
         set({ dirtyFit: false });
+      },
+
+      importOverlayFiles: async (files) => {
+        const sheets: OverlaySheet[] = [];
+        for (const file of files) {
+          try {
+            sheets.push(await sheetFromFile(file, files.length > 1 ? "single" : "parent"));
+          } catch {
+            /* skip unreadable */
+          }
+        }
+        if (!sheets.length) {
+          set({ status: "No readable scans." });
+          return;
+        }
+        const offset = get().overlays.length;
+        const placed = sheets.map((s, i) => ({
+          ...s,
+          ox: (offset + i) * Math.max(s.width * s.scaleMmPerPx * 0.15, 20000),
+          oy: 0,
+        }));
+        set({
+          overlays: [...get().overlays, ...placed],
+          activeOverlayId: placed[0]!.id,
+          rightTab: "maps",
+          view: get().view === "globe" ? "plan" : get().view,
+          dirtyFit: true,
+          fitNonce: get().fitNonce + 1,
+          status:
+            placed.length === 1
+              ? `Imported ${placed[0]!.name} at 1:${placed[0]!.printedScale}. Type collage or georef.`
+              : `Imported ${placed.length} sheets. Type collage to assemble the quadro d'unione.`,
+        });
+      },
+      patchOverlay: (id, patch) => {
+        set({
+          overlays: get().overlays.map((s) => {
+            if (s.id !== id) return s;
+            const next = { ...s, ...patch };
+            next.geo = geoFromGcps(next);
+            return next;
+          }),
+        });
+      },
+      removeOverlay: (id) => {
+        forgetOverlayImage(id);
+        set({
+          overlays: get().overlays.filter((s) => s.id !== id),
+          activeOverlayId: get().activeOverlayId === id ? null : get().activeOverlayId,
+        });
+      },
+      setActiveOverlay: (id) => set({ activeOverlayId: id }),
+      setOverlayMode: (m) =>
+        set({
+          overlayMode: m,
+          pendingGcp: m === "idle" ? null : get().pendingGcp,
+          status:
+            m === "gcp-img"
+              ? "Georef · click a mark on the old scan (church, road fork, sheet tick)."
+              : m === "gcp-map"
+                ? "Georef · click the same point on today's plan, or type lon,lat."
+                : get().status,
+        }),
+      collageOverlays: () => {
+        const next = assembleCollage(get().overlays);
+        set({
+          overlays: next,
+          dirtyFit: true,
+          fitNonce: get().fitNonce + 1,
+          view: "plan",
+          rightTab: "maps",
+          status: `Collage of ${next.length} sheets. Set 1:N scale, then georef onto the live map.`,
+        });
+      },
+      scaleOverlay: (id, printedScale, dpi) => {
+        set({
+          overlays: get().overlays.map((s) => (s.id === id ? applyPrintedScale(s, printedScale, dpi) : s)),
+          dirtyFit: true,
+          fitNonce: get().fitNonce + 1,
+          status: `Sheet scaled at 1:${printedScale}.`,
+        });
+      },
+      addOverlayGcp: (id, gcp) => {
+        set({
+          overlays: get().overlays.map((s) => {
+            if (s.id !== id) return s;
+            const next = { ...s, gcps: [...s.gcps, gcp] };
+            next.geo = geoFromGcps(next);
+            return next;
+          }),
+        });
+      },
+      setPendingGcp: (p) => set({ pendingGcp: p }),
+      finishGcp: (world, geo) => {
+        const st = get();
+        const pending = st.pendingGcp;
+        const id = st.activeOverlayId;
+        if (!pending || !id) {
+          set({ status: "Click the old scan first." });
+          return;
+        }
+        const gcp: OverlayGcp = {
+          id: nid("gcp"),
+          imgX: pending.imgX,
+          imgY: pending.imgY,
+          x: world.x,
+          y: world.y,
+          lon: geo?.lon ?? (st.view === "globe" ? st.globe.lon : undefined),
+          lat: geo?.lat ?? (st.view === "globe" ? st.globe.lat : undefined),
+        };
+        const overlays = st.overlays.map((s) => {
+          if (s.id !== id) return s;
+          const next = { ...s, gcps: [...s.gcps, gcp] };
+          next.geo = geoFromGcps(next);
+          return next;
+        });
+        const n = overlays.find((s) => s.id === id)?.gcps.length ?? 0;
+        set({
+          overlays,
+          pendingGcp: null,
+          overlayMode: n < 2 ? "gcp-img" : "idle",
+          status:
+            n < 2
+              ? "One control point set. Click a second mark on the scan."
+              : "Sheet locked to the modern map. Opacity in Maps. Properties now sit on today's ground.",
+        });
       },
     }),
     {
