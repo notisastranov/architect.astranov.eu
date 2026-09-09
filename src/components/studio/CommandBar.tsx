@@ -1,6 +1,9 @@
 import { useRef } from "react";
+import { toast } from "sonner";
 import { useCad } from "@/lib/cad/store";
 import { parseLength } from "@/lib/cad/units";
+import { runProjectFilm } from "@/lib/cad/film";
+import { SITE_PROPOSE_PROMPT } from "@/lib/cad/propose-site";
 import { commitPolyline, tryCommandPoint } from "./Viewport2D";
 
 export function CommandBar() {
@@ -48,6 +51,17 @@ export function CommandBar() {
       st.setRightTab("maps");
       st.setView("globe");
       st.setGlobe({ lat: 36.16, lon: 27.98, flyNonce: st.globe.flyNonce + 1 });
+    } else if (cmd === "film" || cmd === "movie" || cmd === "video") {
+      toast.message("Recording site film");
+      void runProjectFilm().then(() => toast.success("Film downloaded")).catch((err) => toast.error(String(err)));
+    } else if (cmd === "declare" || cmd === "declaration") {
+      st.setRightTab("maps");
+      st.setStatus("Edit the architectural declaration in Maps, then type film.");
+    } else if (cmd === "propose" || cmd === "design") {
+      st.setRightTab("ai");
+      st.setAiOpen(true);
+      st.setPrompt(SITE_PROPOSE_PROMPT);
+      st.setStatus("AI will draught the villa on this site. Send from the AI dock.");
     } else if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cmd)) {
       const parts = cmd.split(",").map(Number);
       const lon = parts[0]!;
