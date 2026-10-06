@@ -2,6 +2,7 @@ import type { OverlaySheet } from "@/lib/gis/overlay";
 import { overlayImage, rememberOverlayImage, sheetCornersPlan } from "@/lib/gis/overlay";
 import type { Palette } from "./draw2d";
 import { worldToScreen, type Cam } from "./draw2d";
+import { paintSheetAudit } from "./paint-audit";
 import { useCad } from "./store";
 
 export function drawOverlays(
@@ -42,8 +43,8 @@ export function drawOverlays(
   }
 }
 
-/** Called from drawScene without changing its signature. */
 export function paintOverlaysFromStore(ctx: CanvasRenderingContext2D, w: number, h: number, cam: Cam, pal: Palette) {
   const st = useCad.getState();
   drawOverlays(ctx, w, h, st.overlays, cam, pal, st.activeOverlayId);
+  paintSheetAudit(ctx, w, h, cam, pal);
 }

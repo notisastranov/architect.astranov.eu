@@ -3,6 +3,7 @@ import { useCad } from "@/lib/cad/store";
 import { MapsPanel } from "./MapsPanel";
 import { ForensicPanel } from "./ForensicPanel";
 import { SurveyMathPanel } from "./SurveyMathPanel";
+import { VaultAudit } from "./VaultAudit";
 import { AiPanel, Layers, Properties, Quantities, Survey } from "./DockPanels";
 
 const TABS = ["properties", "layers", "maps", "forensic", "quantities", "survey", "ai"] as const;
@@ -34,6 +35,7 @@ export function Dock() {
         {tab === "maps" && <MapsPanel />}
         {tab === "forensic" && (
           <div className="space-y-6">
+            <VaultAudit />
             <ForensicPanel />
             <SurveyMathPanel />
           </div>
