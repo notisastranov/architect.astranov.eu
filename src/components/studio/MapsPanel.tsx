@@ -5,12 +5,19 @@ import { getDeclaration, getSite, patchDeclaration, patchSite } from "@/lib/cad/
 import { SITE_PROPOSE_PROMPT } from "@/lib/cad/propose-site";
 import { RHODES_IGM, igmSheet } from "@/lib/gis/igm";
 import { useState } from "react";
+import { providerById } from "@/lib/gis/layers";
+import { inGreece } from "@/lib/gis/ktima";
+import { PLAN_BASEMAPS } from "@/lib/gis/plan-basemap";
+import { projectSite } from "@/lib/gis/site";
 
 export function MapsPanel() {
+  useCad((s) => s.project.id);
+  useCad((s) => s.project.name);
   const overlays = useCad((s) => s.overlays);
   const active = useCad((s) => s.activeOverlayId);
   const mode = useCad((s) => s.overlayMode);
   const [, bump] = useState(0);
+  const project = useCad((s) => s.project);
   const site = getSite();
   const dec = getDeclaration();
 
@@ -19,6 +26,7 @@ export function MapsPanel() {
       <p className="text-muted">
         Real map of the area, then our plot. AI draughts the building; you edit the BIM; Film flies from the cadastre down to the finished work and the architectural declaration.
       </p>
+      <BasemapPicker />
       <div className="flex flex-wrap gap-1.5">
         <Ghost onClick={() => useCad.getState().collageOverlays()}>Collage</Ghost>
         <Ghost
@@ -91,10 +99,10 @@ export function MapsPanel() {
       <div className="space-y-1.5">
         <div className="font-mono text-[10px] tracking-widest text-subtle uppercase">Architectural declaration</div>
         <Field label="Project" value={site.name} onChange={(v) => { patchSite({ name: v }); bump((n) => n + 1); }} />
-        <Field label="Municipality" value={site.municipality} onChange={(v) => { patchSite({ municipality: v }); bump((n) => n + 1); }} />
-        <Field label="Plot" value={site.plot} onChange={(v) => { patchSite({ plot: v }); bump((n) => n + 1); }} />
+        <Field label="Municipality" placeholder="e.g. Ρόδος" value={site.municipality} onChange={(v) => { patchSite({ municipality: v }); bump((n) => n + 1); }} />
+        <Field label="Plot" placeholder="KAEK or plot reference" value={site.plot} onChange={(v) => { patchSite({ plot: v }); bump((n) => n + 1); }} />
         <Field label="Architect" value={dec.author} onChange={(v) => { patchDeclaration({ author: v }); bump((n) => n + 1); }} />
-        <Field label="Program" value={dec.program} onChange={(v) => { patchDeclaration({ program: v }); bump((n) => n + 1); }} />
+        <Field label="Program" placeholder={project.description} value={dec.program} onChange={(v) => { patchDeclaration({ program: v }); bump((n) => n + 1); }} />
         <label className="block">
           <span className="mb-1 block text-[10px] font-medium tracking-wide text-subtle uppercase">Statement</span>
           <textarea value={dec.statement} onChange={(e) => { patchDeclaration({ statement: e.target.value }); bump((n) => n + 1); }} rows={4} className="w-full rounded-sm bg-elevated px-2 py-1.5 text-xs outline-none" />
@@ -105,12 +113,82 @@ export function MapsPanel() {
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <label className="block">
       <span className="mb-1 block text-[10px] font-medium tracking-wide text-subtle uppercase">{label}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="h-8 w-full rounded-sm bg-elevated px-2 text-xs outline-none" />
+      <input value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} className="h-8 w-full rounded-sm bg-elevated px-2 text-xs outline-none placeholder:text-subtle" />
     </label>
+  );
+}
+
+const BASEMAP_LABEL: Record<string, string> = {
+  none: "None",
+  osm: "OpenStreetMap",
+  "esri-imagery": "Satellite imagery (Esri)",
+  "esri-topo": "Esri topographic",
+  opentopo: "OpenTopoMap",
+  BASEMAP: "Ktimatologio · Greek cadastre WMS",
+};
+
+function BasemapPicker() {
+  const basemap = useCad((s) => s.basemap);
+  const opacity = useCad((s) => s.basemapOpacity);
+  const project = useCad((s) => s.project);
+  const site = projectSite(project);
+  const greece = inGreece(site.lat, site.lon);
+  return (
+    <div className="space-y-1.5" data-testid="basemap-list">
+      <div className="font-mono text-[10px] tracking-widest text-subtle uppercase">Basemap under the plan</div>
+      <div role="radiogroup" aria-label="Basemap" className="space-y-1">
+        {PLAN_BASEMAPS.map((id) => {
+          const disabled = id === "BASEMAP" && !greece;
+          return (
+            <label key={id} className={`flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs ${basemap === id ? "bg-elevated text-fg" : "text-muted hover:text-fg"} ${disabled ? "opacity-40" : "cursor-pointer"}`}>
+              <input
+                type="radio"
+                name="basemap"
+                value={id}
+                checked={basemap === id}
+                disabled={disabled}
+                onChange={() => {
+                  const st = useCad.getState();
+                  st.setBasemap(id);
+                  if (id !== "none" && st.view === "globe") st.setView("plan");
+                  st.setStatus(id === "none" ? "Basemap off." : `Basemap · ${BASEMAP_LABEL[id]} under the plan, origin on the site.`);
+                }}
+                className="accent-[var(--color-primary,currentColor)]"
+              />
+              <span className="flex-1">{BASEMAP_LABEL[id]}</span>
+              {id !== "none" && <span className="font-mono text-[9px] text-subtle">{providerById(id).attribution.split(",")[0]}</span>}
+            </label>
+          );
+        })}
+      </div>
+      {basemap !== "none" && (
+        <label className="block text-[10px] text-subtle">
+          Opacity
+          <input type="range" min={0.1} max={1} step={0.05} value={opacity} onChange={(e) => useCad.getState().setBasemapOpacity(Number(e.target.value))} className="w-full" />
+        </label>
+      )}
+      <div className="rounded-sm bg-elevated/60 px-2 py-1.5 font-mono text-[10px] text-muted">
+        <div>
+          Site {site.lat.toFixed(5)}° N · {site.lon.toFixed(5)}° E{project.site ? "" : " · app default (Rhodes)"}
+        </div>
+        <div className="text-subtle">Plan origin 0,0 sits on the site · +X east · +Y north</div>
+        <button
+          type="button"
+          onClick={() => {
+            const st = useCad.getState();
+            st.setProjectSite(st.globe.lat, st.globe.lon);
+            toast.success("Site set from the Earth view centre");
+          }}
+          className="mt-1 text-primary hover:underline"
+        >
+          Set site to Earth view centre
+        </button>
+      </div>
+    </div>
   );
 }
 
