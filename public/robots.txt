@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /_serverFn/
+Disallow: /__grok/
+
+Sitemap: https://architect.astranov.eu/sitemap.xml
