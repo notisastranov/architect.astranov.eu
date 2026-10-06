@@ -288,7 +288,8 @@ export function pickEntity(project: Project, world: Pt, tol: number): Entity | n
       continue;
     }
     if (e.kind === "room") {
-      if (pointInPoly(world, e.points)) consider(e, 0);
+      // Inside a room ranks last, so a wall, line or opening under the cursor wins.
+      if (pointInPoly(world, e.points)) consider(e, tol);
       continue;
     }
     if (e.kind === "door" || e.kind === "window") {

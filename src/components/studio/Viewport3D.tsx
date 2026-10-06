@@ -154,8 +154,9 @@ function WallMesh({
   return (
     <group>
       {pieces.map((p, i) => {
-        const mid = lerp(wall.a, wall.b, (p.t0 + p.t1) / 2);
-        const w = Math.max((p.t1 - p.t0) * len * M, 0.02);
+        // splitWall works in millimetres along the wall; lerp wants a 0..1 fraction.
+        const mid = lerp(wall.a, wall.b, (p.t0 + p.t1) / 2 / (len || 1));
+        const w = Math.max((p.t1 - p.t0) * M, 0.02);
         const height = Math.max(p.height * M, 0.05);
         const y = p.sill * M + height / 2;
         return (
