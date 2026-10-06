@@ -132,9 +132,10 @@ function GlobeRig() {
   useEffect(() => {
     if (!flyNonce || flyNonce === lastFly.current) return;
     lastFly.current = flyNonce;
-    const { lat, lon } = useCad.getState().globe;
+    const { lat, lon, layer } = useCad.getState().globe;
     fly.current = { cam: latLonToVec(lat, lon, R + 2.4), target: latLonToVec(lat, lon, R) };
-    useCad.getState().setStatus("Flying in · imagery sharpens toward the city");
+    const name = providerById(layer).name;
+    useCad.getState().setStatus(`Flying in · ${name}`);
   }, [flyNonce]);
 
   useFrame(() => {

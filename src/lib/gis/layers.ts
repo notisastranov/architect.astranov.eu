@@ -1,3 +1,5 @@
+import { waybackProvider } from "./wayback";
+
 export interface GlobeProvider {
   id: string;
   name: string;
@@ -8,7 +10,6 @@ export interface GlobeProvider {
   attribution: string;
 }
 
-/** Free basemaps. OSM and OpenTopoMap are fair-use; do not hammer them. Esri imagery is the city zoom. */
 export const GLOBE_PROVIDERS: GlobeProvider[] = [
   { id: "marble", name: "Blue Marble", kind: "base", maxZ: 4, attribution: "NASA Blue Marble" },
   {
@@ -49,6 +50,7 @@ export const GLOBE_PROVIDERS: GlobeProvider[] = [
 ];
 
 export function providerById(id: string) {
+  if (id.startsWith("wb:")) return waybackProvider(id.slice(3));
   return GLOBE_PROVIDERS.find((p) => p.id === id) ?? GLOBE_PROVIDERS[1]!;
 }
 
