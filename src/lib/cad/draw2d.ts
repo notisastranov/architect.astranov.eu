@@ -108,11 +108,13 @@ export function drawScene(
   h: number,
   state: Pick<CadState, "project" | "cam" | "selection" | "draft" | "snapHit" | "hover" | "ortho" | "units" | "tool">,
   pal: Palette,
+  underlay?: () => void,
 ) {
   const { project, cam, selection, draft, snapHit, hover, units } = state;
   ctx.save();
   ctx.fillStyle = pal.paper;
   ctx.fillRect(0, 0, w, h);
+  underlay?.();
 
   drawGrid(ctx, w, h, cam, pal);
   drawAxes(ctx, w, h, cam, pal);

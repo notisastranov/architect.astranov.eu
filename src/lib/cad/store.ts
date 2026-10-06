@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { cloneProject, nid, projectExtents } from "./geometry";
 import { applyOps, type ApplyResult } from "./ops";
 import { blankProject, sampleArchitecture } from "./samples";
+import { projectSite } from "@/lib/gis/site";
 import {
   applyPrintedScale,
   assembleCollage,
@@ -32,6 +33,11 @@ import type {
 
 const MAX_HIST = 40;
 
+function siteLatLon(p: Project) {
+  const s = projectSite(p);
+  return { lat: s.lat, lon: s.lon };
+}
+
 const DEFAULT_GLOBE: GlobeState = {
   lat: 36.434,
   lon: 28.217,
@@ -52,6 +58,15 @@ export interface CadState {
   units: UnitSystem;
   view: ViewMode;
   globe: GlobeState;
+  /** WGS84 under the mouse on the Earth view; null when the cursor is off the globe. */
+  globeCursor: { lat: number; lon: number } | null;
+  /** Forensic Angle / Curve pick: a 3-click open trace that is selected for reading. */
+  tracePick: "angle" | "curve" | null;
+  /** Last two-point Measure (not geometry; read in the Forensic dock). */
+  measureTrace: [Pt, Pt] | null;
+  /** Plan-view basemap provider id ("none" = no tiles). */
+  basemap: string;
+  basemapOpacity: number;
   cam: { x: number; y: number; zoom: number };
   hover: Pt | null;
   snapHit: SnapHit | null;
@@ -76,6 +91,12 @@ export interface CadState {
   setTool: (t: Tool) => void;
   setView: (v: ViewMode) => void;
   setGlobe: (p: Partial<GlobeState>) => void;
+  setGlobeCursor: (c: { lat: number; lon: number } | null) => void;
+  setTracePick: (m: "angle" | "curve" | null) => void;
+  setMeasureTrace: (t: [Pt, Pt] | null) => void;
+  setBasemap: (id: string) => void;
+  setBasemapOpacity: (v: number) => void;
+  setProjectSite: (lat: number, lon: number, label?: string) => void;
   setOrtho: (v: boolean) => void;
   setSnap: (p: Partial<SnapConfig>) => void;
   setUnits: (u: UnitSystem) => void;
@@ -143,6 +164,11 @@ export const useCad = create<CadState>()(
       units: "m",
       view: "globe",
       globe: { ...DEFAULT_GLOBE },
+      globeCursor: null,
+      tracePick: null,
+      measureTrace: null,
+      basemap: "none",
+      basemapOpacity: 0.75,
       cam: { x: 6000, y: 3500, zoom: 0.06 },
       hover: null,
       snapHit: null,
@@ -169,6 +195,7 @@ export const useCad = create<CadState>()(
           tool: t,
           draft: t === "select" || t === "pan" ? null : { tool: t, points: [] },
           status: toolStatus(t),
+          tracePick: null,
         }),
       setView: (v) =>
         set({
@@ -179,6 +206,16 @@ export const useCad = create<CadState>()(
               : get().status,
         }),
       setGlobe: (p) => set({ globe: { ...get().globe, ...p } }),
+      setGlobeCursor: (c) => set({ globeCursor: c }),
+      setTracePick: (m) => set({ tracePick: m }),
+      setMeasureTrace: (t) => set({ measureTrace: t }),
+      setBasemap: (id) => set({ basemap: id }),
+      setBasemapOpacity: (v) => set({ basemapOpacity: Math.max(0.1, Math.min(1, v)) }),
+      setProjectSite: (lat, lon, label) =>
+        set({
+          project: { ...get().project, site: { lat, lon, ...(label ? { label } : {}) } },
+          status: `Site set · ${lat.toFixed(5)}° N ${lon.toFixed(5)}° E`,
+        }),
       setOrtho: (v) => set({ ortho: v }),
       setSnap: (p) => set({ snap: { ...get().snap, ...p } }),
       setUnits: (u) => set({ units: u, project: { ...get().project, units: u } }),
@@ -298,7 +335,7 @@ export const useCad = create<CadState>()(
       zoomExtents: () => {
         if (get().view === "globe") {
           set({
-            globe: { ...get().globe, flyNonce: get().globe.flyNonce + 1, lat: 36.434, lon: 28.217 },
+            globe: { ...get().globe, flyNonce: get().globe.flyNonce + 1, ...siteLatLon(get().project) },
           });
           return;
         }
@@ -449,6 +486,8 @@ export const useCad = create<CadState>()(
         units: s.units,
         cam: s.cam,
         globe: { ...s.globe, flyNonce: 0 },
+        basemap: s.basemap,
+        basemapOpacity: s.basemapOpacity,
       }),
     },
   ),
