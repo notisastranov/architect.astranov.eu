@@ -2,6 +2,7 @@ import { drawScene, fitCam, type Palette } from "./draw2d";
 import { projectExtents } from "./geometry";
 import { useCad } from "./store";
 import { DEFAULT_DECLARATION, DEFAULT_SITE, siteLine } from "./declaration";
+import { getDeclaration, getSite } from "./site-session";
 import type { WallEnt } from "./types";
 
 const W = 1920;
@@ -96,9 +97,8 @@ function waitFrame() {
 }
 
 function paintFrame(ctx: CanvasRenderingContext2D, t: number) {
-  const st = useCad.getState();
-  const site = st.site ?? DEFAULT_SITE;
-  const dec = st.declaration ?? DEFAULT_DECLARATION;
+  const site = getSite();
+  const dec = getDeclaration();
   ctx.fillStyle = "#05070d";
   ctx.fillRect(0, 0, W, H);
 

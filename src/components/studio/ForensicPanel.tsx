@@ -3,12 +3,14 @@ import { toast } from "sonner";
 import { useCad } from "@/lib/cad/store";
 import { angleAt, arcThrough, compareTraces, entityEnds, lengthOf, polylineLength } from "@/lib/cad/forensic";
 import { formatMm } from "@/lib/cad/units";
+import { blinkSheets, startForensicTool } from "@/lib/cad/forensic-actions";
 
 export function ForensicPanel({ part = "all" }: { part?: "topo" | "measure" | "all" }) {
   const overlays = useCad((s) => s.overlays);
   const project = useCad((s) => s.project);
   const selection = useCad((s) => s.selection);
   const units = useCad((s) => s.units);
+  const measureTrace = useCad((s) => s.measureTrace);
   const [tolM, setTolM] = useState(0.2);
   const [tolDeg, setTolDeg] = useState(0.5);
 
@@ -18,6 +20,8 @@ export function ForensicPanel({ part = "all" }: { part?: "topo" | "measure" | "a
   );
 
   const traces = selected.map(entityEnds).filter((x): x is NonNullable<typeof x> => !!x);
+  // One selected trace + the last Measure compares live against what was just measured.
+  if (traces.length === 1 && measureTrace) traces.push(measureTrace);
   const cmp = traces.length >= 2 ? compareTraces(traces[0]!, traces[1]!, tolM, tolDeg) : null;
 
   const showTopo = part === "all" || part === "topo";
@@ -32,7 +36,26 @@ export function ForensicPanel({ part = "all" }: { part?: "topo" | "measure" | "a
           </p>
           <div className="space-y-2">
             <div className="font-mono text-[10px] tracking-widest text-subtle uppercase">Layered sheets</div>
-            {overlays.length === 0 && <p className="text-xs text-muted">Import scans from Maps. Each sheet keeps its own opacity and rotation. The year bar swaps the live ground underneath.</p>}
+            {overlays.length === 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted">No sheets yet. Import a scanned topo (JPG, PNG, TIFF, WebP); each sheet gets its own transparency and angle here. The year bar swaps the live ground underneath.</p>
+                <label className="flex h-9 cursor-pointer items-center justify-center rounded-sm bg-elevated text-xs hover:text-fg">
+                  Import a sheet
+                  <input
+                    type="file"
+                    accept="image/*,.jpg,.jpeg,.png,.tif,.tiff,.webp"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = [...(e.target.files ?? [])];
+                      e.target.value = "";
+                      if (!files.length) return;
+                      void useCad.getState().importOverlayFiles(files).then(() => toast.success("Sheet on the plan"));
+                    }}
+                  />
+                </label>
+              </div>
+            )}
             {overlays.map((s) => (
               <div key={s.id} className="rounded-sm bg-elevated/70 p-2">
                 <div className="text-xs font-medium">{s.name}</div>
@@ -52,14 +75,22 @@ export function ForensicPanel({ part = "all" }: { part?: "topo" | "measure" | "a
       {showMeasure && (
         <>
       <div className="flex flex-wrap gap-1.5">
-        <Ghost onClick={() => useCad.getState().setTool("measure")}>Length</Ghost>
-        <Ghost onClick={() => { useCad.getState().setTool("polyline"); useCad.getState().setStatus("Angle · click arm, vertex, arm. Readout below."); }}>Angle</Ghost>
-        <Ghost onClick={() => useCad.getState().setTool("circle")}>Curve</Ghost>
-        <Ghost onClick={() => { overlays.forEach((s) => useCad.getState().patchOverlay(s.id, { opacity: s.opacity > 0.4 ? 0.22 : 0.78 })); }}>Blink</Ghost>
+        <Ghost onClick={() => startForensicTool("length")}>Length</Ghost>
+        <Ghost onClick={() => startForensicTool("angle")}>Angle</Ghost>
+        <Ghost onClick={() => startForensicTool("curve")}>Curve</Ghost>
+        <Ghost onClick={blinkSheets}>Blink</Ghost>
       </div>
       <div className="space-y-1">
         <div className="font-mono text-[10px] tracking-widest text-subtle uppercase">Readings</div>
-        {selected.length === 0 && <p className="text-xs text-muted">Select a line, wall, polyline or two traces to compare.</p>}
+        {measureTrace && (() => {
+          const m = lengthOf(measureTrace[0], measureTrace[1]);
+          return (
+            <div className="font-mono text-[11px] text-fg">
+              measure · chord {formatMm(m.chordMm, units)} · bearing {m.bearingDeg.toFixed(3)}° ({m.bearingDms})
+            </div>
+          );
+        })()}
+        {selected.length === 0 && !measureTrace && <p className="text-xs text-muted">Select a line, wall or polyline (Shift adds a second trace), or use Length, Angle or Curve.</p>}
         {selected.map((e) => {
           const ends = entityEnds(e);
           if (!ends) return null;
@@ -91,7 +122,7 @@ export function ForensicPanel({ part = "all" }: { part?: "topo" | "measure" | "a
             <p className="mt-1 text-muted">{cmp.note}</p>
           </div>
         ) : (
-          <p className="text-xs text-muted">Select two lines — old boundary and today’s boundary — to compare length and bearing.</p>
+          <p className="text-xs text-muted">Select two traces (Shift-click), or one trace plus a Length measure, to compare length and bearing.</p>
         )}
         <button type="button" className="text-[11px] text-muted hover:text-fg" onClick={() => toast.message(cmp ? cmp.flag : "Select two traces first")}>
           Copy flag to status
