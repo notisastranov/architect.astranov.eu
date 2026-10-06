@@ -82,6 +82,8 @@ export function compareTraces(a: [Pt, Pt], b: [Pt, Pt], tolM = 0.2, tolDeg = 0.5
   const lengthDeltaM = Math.abs(la.chordMm - lb.chordMm) / 1000;
   let angleDeltaDeg = Math.abs(la.bearingDeg - lb.bearingDeg);
   if (angleDeltaDeg > 180) angleDeltaDeg = 360 - angleDeltaDeg;
+  // A boundary has no direction: the same edge traced the other way is not a disagreement.
+  if (angleDeltaDeg > 90) angleDeltaDeg = 180 - angleDeltaDeg;
   const lengthBad = lengthDeltaM > tolM;
   const angleBad = angleDeltaDeg > tolDeg;
   const strong = lengthDeltaM > tolM * 4 || angleDeltaDeg > tolDeg * 4;

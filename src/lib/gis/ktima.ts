@@ -11,6 +11,9 @@ export const GREECE_BBOX = { west: 19.153, south: 32.4, east: 31.962, north: 41.
 
 export const RHODES = { lat: 36.434, lon: 28.217 };
 
+/** Ktimatologio arms on the globe below this camera altitude (sphere units, Earth radius = 100 → ~7.6 km). */
+export const KTIMA_ARM_ALT = 0.12;
+
 export function inGreece(lat: number, lon: number, pad = 0.4) {
   return (
     lon >= GREECE_BBOX.west - pad &&
