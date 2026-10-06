@@ -14,14 +14,16 @@ export function Dock() {
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-l border-border bg-surface">
-      <div className="flex shrink-0 gap-0 overflow-x-auto border-b border-border px-1">
+      <div className="flex shrink-0 flex-wrap gap-x-0 border-b border-border px-1" role="tablist" aria-label="Inspector">
         {TABS.map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
+            role="tab"
+            aria-selected={tab === t}
             className={cn(
-              "shrink-0 px-2 py-2.5 text-[10px] font-medium tracking-wide uppercase transition-colors duration-150",
+              "shrink-0 px-1.5 py-2 text-[10px] font-medium tracking-wide uppercase transition-colors duration-150",
               tab === t ? "text-fg" : "text-muted hover:text-fg",
             )}
           >

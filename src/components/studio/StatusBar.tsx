@@ -1,6 +1,7 @@
 import { useCad } from "@/lib/cad/store";
 import { formatMmNum } from "@/lib/cad/units";
 import { cn } from "@/lib/utils";
+import { providerById } from "@/lib/gis/layers";
 
 export function StatusBar() {
   const hover = useCad((s) => s.hover);
@@ -15,6 +16,9 @@ export function StatusBar() {
   const project = useCad((s) => s.project);
   const view = useCad((s) => s.view);
   const globe = useCad((s) => s.globe);
+  const cursor = useCad((s) => s.globeCursor);
+  const basemap = useCad((s) => s.basemap);
+  const geo = cursor ?? globe;
 
   const x = hover ? formatMmNum(hover.x, units) : "-";
   const y = hover ? formatMmNum(hover.y, units) : "-";
@@ -24,9 +28,9 @@ export function StatusBar() {
     <div className="flex h-[var(--height-status)] min-w-0 shrink-0 items-center gap-2 overflow-x-auto border-t border-border bg-bg px-2 font-mono text-[10px] text-muted">
       {view === "globe" ? (
         <span className="tabular shrink-0">
-          {globe.lat.toFixed(4)} deg
+          {geo.lat.toFixed(5)} deg
           <span className="text-subtle"> · </span>
-          {globe.lon.toFixed(4)} deg
+          {geo.lon.toFixed(5)} deg
           <span className="text-subtle"> · {globe.layer === "BASEMAP" ? "KTBASEMAP" : "EARTH"}</span>
         </span>
       ) : (
@@ -35,6 +39,7 @@ export function StatusBar() {
           <span className="text-subtle"> · </span>
           N {y}
           <span className="text-subtle"> {units}</span>
+          {basemap !== "none" && <span className="text-subtle"> · {providerById(basemap).name}</span>}
         </span>
       )}
       <span className="hidden shrink-0 text-subtle sm:inline">{snapHit ? snapHit.type.toUpperCase() : "FREE"}</span>
