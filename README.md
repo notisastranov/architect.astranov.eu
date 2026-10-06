@@ -1,53 +1,19 @@
-# Astranov Architect BIMCAD
+# Astranov Architect Forensic TopoBimCad
 
-Millimetre-kernel CAD, BIM and survey studio for architects, mechanical engineers and topographers.
+Forensic topographic BIMCAD: layered historical and live sheets, adjustable transparency, sheet angle in degrees, and length on lines and curves.
 
 **Domain:** [architect.astranov.eu](https://architect.astranov.eu)  
 **Source:** [github.com/notisastranov/architect.astranov.eu](https://github.com/notisastranov/architect.astranov.eu)
 
-Plan, split and 3D model views. Walls, doors, windows, slabs, plates, holes, survey traverses. Snap, ortho, command line, quantities, IFC properties, and an AI draughtsman.
+Formerly Astranov Architect BIMCAD. The millimetre kernel, globe, Ktimatologio drape and Italian collage remain.
 
-A3 product poster: `public/poster.png` / `public/poster.html`.
+## Forensic use
 
-## Stack
+1. Import the old topo and the live cadastre (`overlay`, Maps).
+2. Open the **Forensic** dock. Fade each sheet independently. Set sheet angle in degrees if a scan was placed rotated.
+3. Trace the old boundary and today's boundary as lines.
+4. Select both. The panel reports chord length, chain length on a polyline, arc length through three points, bearing in decimal degrees and DMS, and the disagreement (Δ length, Δ bearing).
 
-TanStack Start · React 19 · Three.js · Zustand · Vercel (Nitro)
+A flag of `review` or `strong disagreement` is geometric evidence for a surveyor or a court. It is not a finding that a particular topographer cheated. Paper stretch, a bad control point, or a wrong printed scale produce the same numbers.
 
-Internal units are millimetres. Display units: mm, cm, m, ft.
-
-## Hosting (architect.astranov.eu)
-
-Zone `astranov.eu` is on Cloudflare. Sister hosts (`www`, `grok`, `frogschool`, `yachts`, …) already sit on Vercel.
-
-1. Import this GitHub repo as a Vercel project (`fra1`, `VITE_AUTH_ENABLED=false`, `XAI_API_KEY` for the draughtsman).
-2. Add domain `architect.astranov.eu`.
-3. In Cloudflare DNS:
-
-| Type | Name | Target | Proxy |
-|---|---|---|---|
-| CNAME | `architect` | `cname.vercel-dns.com` | DNS only (grey) |
-
-Vercel will ask for a `vc-domain-verify=architect.astranov.eu,…` TXT on `_vercel` — same record set as `grok` / `yachts` / `www`.
-
-Until that CNAME exists the hostname does not resolve.
-
-## Environment
-
-Set these on the Vercel project (never commit them):
-
-| Variable | Required | Purpose |
-|---|---|---|
-| `XAI_API_KEY` | for AI draughtsman | xAI chat — user-initiated only |
-| `VITE_AUTH_ENABLED` | `false` | this studio has no accounts |
-
-## Historical Italian sheets
-
-BIMCAD can collage old IGM / catasto scans (the big quadro d'unione plus the small tavolette) and lock them onto today's Ktimatologio / globe.
-
-1. Open the **Maps** dock tab or type `overlay`.
-2. Import the parent sheet and the singles.
-3. Type `collage` to assemble them at printed scale (`1:25000`, `1:2000`, …).
-4. Type `georef`, click a church or road fork on the old scan, then the same point on the modern plan — or type `lon,lat`. Two points scale, rotate and place the collage so particelle sit on live ground.
-5. Zoom the globe: registered sheets carry geographic bounds for draping over Rhodes / Greece orthophoto.
-
-Commands: `overlay`, `collage`, `georef`, `1:25000`, `rodi`.
+Commands: `forensic`, `angle`, `length`, `blink`, plus `overlay`, `collage`, `georef`.
