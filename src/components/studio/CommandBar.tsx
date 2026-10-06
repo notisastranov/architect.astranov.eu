@@ -4,6 +4,7 @@ import { useCad } from "@/lib/cad/store";
 import { parseLength } from "@/lib/cad/units";
 import { runProjectFilm } from "@/lib/cad/film";
 import { SITE_PROPOSE_PROMPT } from "@/lib/cad/propose-site";
+import { blinkSheets, startForensicTool } from "@/lib/cad/forensic-actions";
 import { commitPolyline, tryCommandPoint } from "./Viewport2D";
 
 export function CommandBar() {
@@ -18,16 +19,30 @@ export function CommandBar() {
       commitPolyline();
       return;
     }
+    const st = useCad.getState();
+    // A placed note takes whatever was typed as its text, even if it looks like a command.
+    if (st.draft?.tool === "text" && st.draft.points.length) {
+      commitPolyline();
+      inputRef.current?.blur();
+      return;
+    }
     if (tryCommandPoint(t)) {
       setCommand("");
       return;
     }
-    const st = useCad.getState();
     const cmd = t.toLowerCase();
     if (cmd === "u" || cmd === "undo") st.undo();
     else if (cmd === "redo") st.redo();
     else if (cmd === "z" || cmd === "zoom" || cmd === "zoom e" || cmd === "extents") st.zoomExtents();
     else if (cmd === "globe" || cmd === "earth" || cmd === "world") st.setView("globe");
+    else if (cmd === "forensic" || cmd === "topo") {
+      st.setRightTab("forensic");
+      st.setForensicSub("topo");
+      st.setStatus("Forensic · sheets, transparency and angle in the dock; length, angle, curve, blink on the command line.");
+    } else if (cmd === "length" || cmd === "len" || cmd === "measure") startForensicTool("length");
+    else if (cmd === "angle" || cmd === "ang") startForensicTool("angle");
+    else if (cmd === "curve" || cmd === "arc") startForensicTool("curve");
+    else if (cmd === "blink") blinkSheets();
     else if (cmd === "rhodes") {
       st.setView("globe");
       st.setGlobe({ lat: 36.434, lon: 28.217, flyNonce: st.globe.flyNonce + 1 });
@@ -76,8 +91,6 @@ export function CommandBar() {
     else if (cmd.startsWith("units ")) {
       const u = cmd.slice(6).trim();
       if (u === "mm" || u === "cm" || u === "m" || u === "ft") st.setUnits(u);
-    } else if (st.draft?.tool === "text") {
-      commitPolyline();
     } else if (cmd === "l" || cmd === "line") st.setTool("line");
     else if (cmd === "w" || cmd === "wall") st.setTool("wall");
     else if (cmd === "c" || cmd === "circle") st.setTool("circle");
