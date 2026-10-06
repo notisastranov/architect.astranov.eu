@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { useCad } from "@/lib/cad/store";
 import { MapsPanel } from "./MapsPanel";
 import { ForensicPanel } from "./ForensicPanel";
+import { SurveyMathPanel } from "./SurveyMathPanel";
 import { AiPanel, Layers, Properties, Quantities, Survey } from "./DockPanels";
 
 const TABS = ["properties", "layers", "maps", "forensic", "quantities", "survey", "ai"] as const;
@@ -31,7 +32,12 @@ export function Dock() {
         {tab === "properties" && <Properties />}
         {tab === "layers" && <Layers />}
         {tab === "maps" && <MapsPanel />}
-        {tab === "forensic" && <ForensicPanel />}
+        {tab === "forensic" && (
+          <div className="space-y-6">
+            <ForensicPanel />
+            <SurveyMathPanel />
+          </div>
+        )}
         {tab === "quantities" && <Quantities />}
         {tab === "survey" && <Survey />}
         {tab === "ai" && <AiPanel />}
