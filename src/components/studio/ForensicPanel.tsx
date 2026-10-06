@@ -4,7 +4,7 @@ import { useCad } from "@/lib/cad/store";
 import { angleAt, arcThrough, compareTraces, entityEnds, lengthOf, polylineLength } from "@/lib/cad/forensic";
 import { formatMm } from "@/lib/cad/units";
 
-export function ForensicPanel() {
+export function ForensicPanel({ part = "all" }: { part?: "topo" | "measure" | "all" }) {
   const overlays = useCad((s) => s.overlays);
   const project = useCad((s) => s.project);
   const selection = useCad((s) => s.selection);
@@ -20,33 +20,42 @@ export function ForensicPanel() {
   const traces = selected.map(entityEnds).filter((x): x is NonNullable<typeof x> => !!x);
   const cmp = traces.length >= 2 ? compareTraces(traces[0]!, traces[1]!, tolM, tolDeg) : null;
 
+  const showTopo = part === "all" || part === "topo";
+  const showMeasure = part === "all" || part === "measure";
+
   return (
     <div className="space-y-4 text-sm">
-      <p className="text-muted">
-        Layer old and live topo, fade each sheet, rotate it in degrees, then measure lines and curves. A disagreement is evidence to review — not a finding that someone cheated the land.
-      </p>
+      {showTopo && (
+        <>
+          <p className="text-muted">
+            ToPo keeps every year of ground under the sheet. Drag the bar above the work area — 2014 through this year — the way a historical globe does. Fade each scan and rotate it in degrees. A disagreement is evidence to review, not a verdict that someone cheated the land.
+          </p>
+          <div className="space-y-2">
+            <div className="font-mono text-[10px] tracking-widest text-subtle uppercase">Layered sheets</div>
+            {overlays.length === 0 && <p className="text-xs text-muted">Import scans from Maps. Each sheet keeps its own opacity and rotation. The year bar swaps the live ground underneath.</p>}
+            {overlays.map((s) => (
+              <div key={s.id} className="rounded-sm bg-elevated/70 p-2">
+                <div className="text-xs font-medium">{s.name}</div>
+                <label className="mt-1 block text-[10px] text-subtle">
+                  Transparency {Math.round(s.opacity * 100)}%
+                  <input type="range" min={0.08} max={1} step={0.02} value={s.opacity} onChange={(e) => useCad.getState().patchOverlay(s.id, { opacity: Number(e.target.value) })} className="w-full" />
+                </label>
+                <label className="mt-1 flex items-center justify-between text-[10px] text-subtle">
+                  Sheet angle °
+                  <input type="number" step={0.1} value={s.rotationDeg} onChange={(e) => useCad.getState().patchOverlay(s.id, { rotationDeg: Number(e.target.value) })} className="h-7 w-24 rounded-sm bg-bg px-2 font-mono text-xs" />
+                </label>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {showMeasure && (
+        <>
       <div className="flex flex-wrap gap-1.5">
         <Ghost onClick={() => useCad.getState().setTool("measure")}>Length</Ghost>
         <Ghost onClick={() => { useCad.getState().setTool("polyline"); useCad.getState().setStatus("Angle · click arm, vertex, arm. Readout below."); }}>Angle</Ghost>
         <Ghost onClick={() => useCad.getState().setTool("circle")}>Curve</Ghost>
         <Ghost onClick={() => { overlays.forEach((s) => useCad.getState().patchOverlay(s.id, { opacity: s.opacity > 0.4 ? 0.22 : 0.78 })); }}>Blink</Ghost>
-      </div>
-      <div className="space-y-2">
-        <div className="font-mono text-[10px] tracking-widest text-subtle uppercase">Layered sheets</div>
-        {overlays.length === 0 && <p className="text-xs text-muted">Import scans from Maps. Each sheet keeps its own opacity and rotation.</p>}
-        {overlays.map((s) => (
-          <div key={s.id} className="rounded-sm bg-elevated/70 p-2">
-            <div className="text-xs font-medium">{s.name}</div>
-            <label className="mt-1 block text-[10px] text-subtle">
-              Transparency {Math.round(s.opacity * 100)}%
-              <input type="range" min={0.08} max={1} step={0.02} value={s.opacity} onChange={(e) => useCad.getState().patchOverlay(s.id, { opacity: Number(e.target.value) })} className="w-full" />
-            </label>
-            <label className="mt-1 flex items-center justify-between text-[10px] text-subtle">
-              Sheet angle °
-              <input type="number" step={0.1} value={s.rotationDeg} onChange={(e) => useCad.getState().patchOverlay(s.id, { rotationDeg: Number(e.target.value) })} className="h-7 w-24 rounded-sm bg-bg px-2 font-mono text-xs" />
-            </label>
-          </div>
-        ))}
       </div>
       <div className="space-y-1">
         <div className="font-mono text-[10px] tracking-widest text-subtle uppercase">Readings</div>
@@ -88,6 +97,8 @@ export function ForensicPanel() {
           Copy flag to status
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 }

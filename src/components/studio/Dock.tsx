@@ -33,13 +33,7 @@ export function Dock() {
         {tab === "properties" && <Properties />}
         {tab === "layers" && <Layers />}
         {tab === "maps" && <MapsPanel />}
-        {tab === "forensic" && (
-          <div className="space-y-6">
-            <VaultAudit />
-            <ForensicPanel />
-            <SurveyMathPanel />
-          </div>
-        )}
+        {tab === "forensic" && <ForensicDock />}
         {tab === "quantities" && <Quantities />}
         {tab === "survey" && <Survey />}
         {tab === "ai" && <AiPanel />}
@@ -49,3 +43,43 @@ export function Dock() {
 }
 
 export { AiPanel } from "./DockPanels";
+
+const FORENSIC_SUBS = [
+  { id: "topo", label: "ToPo" },
+  { id: "vault", label: "Vault" },
+  { id: "measure", label: "Measure" },
+] as const;
+
+function ForensicDock() {
+  const sub = useCad((s) => s.forensicSub);
+  const setSub = useCad((s) => s.setForensicSub);
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-1" role="tablist" aria-label="Forensic">
+        {FORENSIC_SUBS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={sub === item.id}
+            onClick={() => setSub(item.id)}
+            className={cn(
+              "rounded-sm px-2.5 py-1.5 text-[11px] tracking-wide",
+              sub === item.id ? "bg-elevated text-fg" : "text-muted hover:text-fg",
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      {sub === "topo" && <ForensicPanel part="topo" />}
+      {sub === "vault" && <VaultAudit />}
+      {sub === "measure" && (
+        <div className="space-y-6">
+          <ForensicPanel part="measure" />
+          <SurveyMathPanel />
+        </div>
+      )}
+    </div>
+  );
+}

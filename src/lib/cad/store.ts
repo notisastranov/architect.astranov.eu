@@ -65,6 +65,7 @@ export interface CadState {
   helpOpen: boolean;
   projectsOpen: boolean;
   rightTab: "properties" | "layers" | "quantities" | "survey" | "ai" | "maps" | "forensic";
+  forensicSub: "topo" | "vault" | "measure";
   fitNonce: number;
   dirtyFit: boolean;
   overlays: OverlaySheet[];
@@ -84,6 +85,7 @@ export interface CadState {
   setStatus: (s: string) => void;
   setPrompt: (s: string) => void;
   setRightTab: (t: CadState["rightTab"]) => void;
+  setForensicSub: (t: CadState["forensicSub"]) => void;
   setAiOpen: (v: boolean) => void;
   setInspectOpen: (v: boolean) => void;
   setHelpOpen: (v: boolean) => void;
@@ -154,6 +156,7 @@ export const useCad = create<CadState>()(
       helpOpen: false,
       projectsOpen: false,
       rightTab: "forensic",
+      forensicSub: "topo",
       fitNonce: 1,
       dirtyFit: true,
       overlays: [],
@@ -185,6 +188,7 @@ export const useCad = create<CadState>()(
       setStatus: (s) => set({ status: s }),
       setPrompt: (s) => set({ prompt: s }),
       setRightTab: (t) => set({ rightTab: t, aiOpen: t === "ai" ? true : get().aiOpen }),
+      setForensicSub: (t) => set({ forensicSub: t, rightTab: "forensic" }),
       setAiOpen: (v) => set({ aiOpen: v, rightTab: v ? "ai" : get().rightTab }),
       setInspectOpen: (v) => set({ inspectOpen: v }),
       setHelpOpen: (v) => set({ helpOpen: v }),

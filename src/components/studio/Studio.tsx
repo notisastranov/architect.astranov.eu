@@ -28,6 +28,7 @@ import { ViewportGlobe } from "./ViewportGlobe";
 import { CommandBar } from "./CommandBar";
 import { StatusBar } from "./StatusBar";
 import { AiPanel, Dock } from "./Dock";
+import { YearTimeline } from "./YearTimeline";
 import type { Project, Tool, ViewMode } from "@/lib/cad/types";
 
 const KEY_TOOLS: Record<string, Tool> = {
@@ -55,6 +56,8 @@ export function Studio() {
   const aiOpen = useCad((s) => s.aiOpen);
   const [mobileDock, setMobileDock] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
+  const rightTab = useCad((s) => s.rightTab);
+  const forensicSub = useCad((s) => s.forensicSub);
 
   useEffect(() => {
     const done = () => useCad.getState().setView("globe");
@@ -140,6 +143,7 @@ export function Studio() {
         <div className="flex w-full min-w-0 shrink-0 border-b border-border md:hidden">
             <Toolbar orientation="horizontal" />
           </div>
+          {rightTab === "forensic" && forensicSub === "topo" && <YearTimeline />}
           <div className="flex min-h-0 min-w-0 flex-1">
             {view === "globe" && (
               <div className="min-h-0 min-w-0 flex-1">
