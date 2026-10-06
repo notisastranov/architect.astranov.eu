@@ -157,8 +157,10 @@ export function renderInstallPageHtml(template, { host, url } = {}) {
     .replaceAll("{{APP_URL}}", escapeHtml(stripInstallParams(url)));
 }
 
-export function renderWebManifest(hostHeader) {
-  const name = appNameFromHost(hostHeader);
+export function renderWebManifest(hostHeader, siteTitle = "") {
+  // The baked site title (src/lib/og/site.json) names a custom-domain app;
+  // without it, fall back to the published *.grok.me host name.
+  const name = String(siteTitle ?? "").trim() || appNameFromHost(hostHeader);
   return JSON.stringify(
     {
       name,
