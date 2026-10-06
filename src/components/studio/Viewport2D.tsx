@@ -8,9 +8,13 @@ import {
 } from "@/lib/cad/geometry";
 import { drawScene, fitCam, readPalette, screenToWorld } from "@/lib/cad/draw2d";
 import { paintOverlaysFromStore } from "@/lib/cad/draw-overlay";
-import { parsePoint } from "@/lib/cad/units";
+import { paintBasemap } from "@/lib/gis/plan-basemap";
+import { projectSite } from "@/lib/gis/site";
+import { formatMm, parsePoint } from "@/lib/cad/units";
+import { lengthOf } from "@/lib/cad/forensic";
 import { useCad } from "@/lib/cad/store";
-import type { Entity, OpeningEnt, Pt, Tool, WallEnt } from "@/lib/cad/types";
+import { isTypingTarget } from "@/lib/keyboard";
+import type { Entity, OpeningEnt, Project, Pt, Tool, WallEnt } from "@/lib/cad/types";
 
 const DRAW_TOOLS: Tool[] = [
   "line",
@@ -31,6 +35,7 @@ export function Viewport2D() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{ x: number; y: number; camX: number; camY: number } | null>(null);
   const spaceRef = useRef(false);
+  const redrawRef = useRef<() => void>(() => {});
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -57,11 +62,23 @@ export function Viewport2D() {
     }
     const pal = readPalette(wrap);
     const st = useCad.getState();
-    drawScene(ctx, w, h, st, pal);
+    let credit: string | null = null;
+    drawScene(ctx, w, h, st, pal, () => {
+      credit = paintBasemap(ctx, w, h, st.cam, projectSite(st.project), st.basemap, st.basemapOpacity, () => requestAnimationFrame(() => redrawRef.current()));
+    });
     paintOverlaysFromStore(ctx, w, h, st.cam, pal);
+    if (credit) {
+      ctx.save();
+      ctx.font = "10px 'IBM Plex Mono', monospace";
+      ctx.textAlign = "right";
+      ctx.fillStyle = pal.muted;
+      ctx.fillText(credit, w - 10, h - 8);
+      ctx.restore();
+    }
   }, []);
 
   useEffect(() => {
+    redrawRef.current = redraw;
     redraw();
     const unsub = useCad.subscribe(() => redraw());
     const wrap = wrapRef.current;
@@ -76,7 +93,9 @@ export function Viewport2D() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Space") spaceRef.current = e.type === "keydown";
+      if (e.code !== "Space") return;
+      if (e.type === "keydown" && isTypingTarget(e)) return;
+      spaceRef.current = e.type === "keydown";
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKey);
@@ -114,7 +133,19 @@ export function Viewport2D() {
     }
     if (e.button !== 0) return;
     const world = resolveWorld(e.clientX, e.clientY);
-    handleClick(world, e.shiftKey);
+    // Openings host on the wall under the cursor itself, not on a grid snap beside it.
+    const raw = st.tool === "door" || st.tool === "window" || st.tool === "select" ? rawWorld(e.clientX, e.clientY) : world;
+    handleClick(raw, e.shiftKey);
+  };
+
+  const rawWorld = (clientX: number, clientY: number): Pt => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    return screenToWorld({ x: clientX - rect.left, y: clientY - rect.top }, useCad.getState().cam, rect.width, rect.height);
+  };
+
+  const onDoubleClick = () => {
+    const d = useCad.getState().draft;
+    if (d && (d.tool === "room" || d.tool === "polyline")) commitPolyline();
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -175,6 +206,7 @@ export function Viewport2D() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onWheel={onWheel}
+        onDoubleClick={onDoubleClick}
       />
     </div>
   );
@@ -193,21 +225,15 @@ function handleClick(world: Pt, shift: boolean) {
   }
 
   if (tool === "door" || tool === "window") {
-    const hit = pickEntity(st.project, world, 14 / st.cam.zoom);
-    const wall =
-      hit?.kind === "wall"
-        ? hit
-        : (st.project.entities.find((e) => e.kind === "wall" && distPointToWall(world, e as WallEnt) < 14 / st.cam.zoom) as
-            | WallEnt
-            | undefined);
+    const wall = nearestWall(st.project, world, 16 / st.cam.zoom);
     if (!wall) {
-      st.setStatus("Click a wall to host the opening.");
+      st.setStatus(`${tool === "door" ? "Door" : "Window"} · click on a wall to host the opening.`);
       return;
     }
     const len = Math.hypot(wall.b.x - wall.a.x, wall.b.y - wall.a.y) || 1;
     const t = ((world.x - wall.a.x) * (wall.b.x - wall.a.x) + (world.y - wall.a.y) * (wall.b.y - wall.a.y)) / (len * len);
-    const width = tool === "door" ? 900 : 1200;
-    const offset = Math.max(0, t * len - width / 2);
+    const width = Math.min(tool === "door" ? 900 : 1200, Math.max(100, len * 0.8));
+    const offset = Math.max(0, Math.min(len - width, t * len - width / 2));
     const e: OpeningEnt = {
       id: nid(tool),
       kind: tool,
@@ -311,14 +337,22 @@ function handleClick(world: Pt, shift: boolean) {
     return;
   }
   if (tool === "measure" && points.length >= 2) {
+    const a = points[0]!;
+    const b = points[1]!;
+    const len = lengthOf(a, b);
+    st.setMeasureTrace([a, b]);
+    st.setStatus(`Length ${formatMm(len.chordMm, st.units)} · bearing ${len.bearingDeg.toFixed(3)}° (${len.bearingDms})`);
     st.setDraft({ tool, points: [] });
     return;
   }
   if (tool === "text") {
     const existing = st.command.trim();
-    st.setPrompt("text");
-    st.setStatus("Type the note in the command line, then Enter.");
-    st.setDraft({ tool, points });
+    st.setStatus("Note · type the text here, then Enter to place it.");
+    st.setDraft({ tool, points: [world] });
+    if (!existing) {
+      // Put the caret where the note is typed so keystrokes do not fire tool shortcuts.
+      requestAnimationFrame(() => document.querySelector<HTMLInputElement>('input[aria-label="Command line"]')?.focus());
+    }
     if (existing) {
       finish({
         id: nid("txt"),
@@ -349,9 +383,22 @@ function handleClick(world: Pt, shift: boolean) {
     st.setCommand("");
     return;
   }
-  if (tool === "polyline" || tool === "room") {
+  if (tool === "polyline" && st.tracePick) {
+    // Forensic Angle / Curve: three clicks make an open trace, read at once.
     st.setDraft({ tool, points });
-    st.setStatus(`${tool === "room" ? "Room" : "Polyline"} · ${points.length} pts · Enter to close`);
+    if (points.length >= 3) commitPolyline();
+    else st.setStatus(`${st.tracePick === "angle" ? "Angle · arm, vertex, arm" : "Curve · start, a point on the curve, end"} · ${points.length}/3`);
+    return;
+  }
+  if (tool === "polyline" || tool === "room") {
+    const first = draft.points[0];
+    // Clicking the first vertex again closes the outline, as in any CAD package.
+    if (first && draft.points.length >= 3 && dist2(first, world) <= (12 / st.cam.zoom) ** 2) {
+      commitPolyline();
+      return;
+    }
+    st.setDraft({ tool, points });
+    st.setStatus(`${tool === "room" ? "Room" : "Polyline"} · ${points.length} pts · click the first point, double-click or Enter to close`);
     return;
   }
 
@@ -362,6 +409,27 @@ function defaultLayer(st: ReturnType<typeof useCad.getState>, prefer: string, fa
   if (st.project.layers.some((l) => l.id === prefer)) return prefer;
   if (st.project.layers.some((l) => l.id === fallback)) return fallback;
   return st.project.layers[0]!.id;
+}
+
+function dist2(a: Pt, b: Pt) {
+  return (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
+}
+
+/** Closest wall to p within its own half-thickness plus `tol`, on a visible, unlocked layer. */
+function nearestWall(project: Project, p: Pt, tol: number): WallEnt | undefined {
+  let best: WallEnt | undefined;
+  let bestD = Infinity;
+  for (const e of project.entities) {
+    if (e.kind !== "wall") continue;
+    const layer = project.layers.find((l) => l.id === e.layerId);
+    if (layer && (!layer.visible || layer.locked)) continue;
+    const d = distPointToWall(p, e);
+    if (d <= e.thickness / 2 + tol && d < bestD) {
+      best = e;
+      bestD = d;
+    }
+  }
+  return best;
 }
 
 function distPointToWall(p: Pt, w: WallEnt) {
@@ -377,20 +445,36 @@ export function commitPolyline() {
   const d = st.draft;
   if (!d) return;
   if (d.tool === "polyline" && d.points.length >= 2) {
+    const pick = st.tracePick;
+    const id = nid("pl");
     st.addEntity({
-      id: nid("pl"),
+      id,
       kind: "polyline",
       layerId: defaultLayer(st, "outline", "notes"),
       points: d.points,
-      closed: true,
+      closed: !pick,
     });
+    if (pick) {
+      // Hand the trace to the Forensic dock: select it and show Measure.
+      useCad.setState({ tool: "select", draft: null, tracePick: null });
+      st.select([id]);
+      st.setRightTab("forensic");
+      st.setForensicSub("measure");
+      st.setStatus(`${pick === "angle" ? "Angle" : "Curve"} trace placed · readings in Forensic › Measure`);
+      return;
+    }
   }
-  if (d.tool === "room" && d.points.length >= 3) {
+  const outline = dedupe(d.points, 1 / Math.max(st.cam.zoom, 1e-6));
+  if (d.tool === "room" && outline.length < 3) {
+    st.setStatus("Room · needs three corners. Keep clicking, then close.");
+    return;
+  }
+  if (d.tool === "room" && outline.length >= 3) {
     st.addEntity({
       id: nid("space"),
       kind: "room",
       layerId: defaultLayer(st, "rooms", "notes"),
-      points: d.points,
+      points: outline,
       occupancy: "Residential",
       name: "Room",
     });
@@ -408,6 +492,17 @@ export function commitPolyline() {
     st.setCommand("");
   }
   st.setDraft({ tool: d.tool, points: [] });
+}
+
+/** Drop repeated vertices (a double-click lands two clicks on one spot) and a closing duplicate. */
+function dedupe(pts: Pt[], tol: number): Pt[] {
+  const out: Pt[] = [];
+  for (const p of pts) {
+    const last = out[out.length - 1];
+    if (!last || dist2(last, p) > tol * tol) out.push(p);
+  }
+  if (out.length > 2 && dist2(out[0]!, out[out.length - 1]!) <= tol * tol) out.pop();
+  return out;
 }
 
 export function tryCommandPoint(input: string): boolean {
