@@ -1,9 +1,10 @@
 import { cn } from "@/lib/utils";
 import { useCad } from "@/lib/cad/store";
 import { MapsPanel } from "./MapsPanel";
+import { ForensicPanel } from "./ForensicPanel";
 import { AiPanel, Layers, Properties, Quantities, Survey } from "./DockPanels";
 
-const TABS = ["properties", "layers", "maps", "quantities", "survey", "ai"] as const;
+const TABS = ["properties", "layers", "maps", "forensic", "quantities", "survey", "ai"] as const;
 
 export function Dock() {
   const tab = useCad((s) => s.rightTab);
@@ -30,6 +31,7 @@ export function Dock() {
         {tab === "properties" && <Properties />}
         {tab === "layers" && <Layers />}
         {tab === "maps" && <MapsPanel />}
+        {tab === "forensic" && <ForensicPanel />}
         {tab === "quantities" && <Quantities />}
         {tab === "survey" && <Survey />}
         {tab === "ai" && <AiPanel />}
