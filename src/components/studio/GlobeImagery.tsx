@@ -3,9 +3,7 @@ import * as THREE from "three";
 import { providerById, tileUrl } from "@/lib/gis/layers";
 import { tileBbox, lonToTileX, latToTileY, zoomForAlt } from "@/lib/gis/slippy";
 import { usePins } from "@/lib/gis/pins";
-import { latLonToVec } from "./ViewportGlobe";
-
-const R = 100;
+import { GLOBE_R, latLonToVec } from "@/lib/gis/vec";
 
 export function GlobeImagery({ lat, lon, alt, layer }: { lat: number; lon: number; alt: number; layer: string }) {
   const provider = providerById(layer);
@@ -62,10 +60,10 @@ function SlippyTile({ providerId, z, x, y }: { providerId: string; z: number; x:
   }, [providerId, z, x, y]);
 
   const geom = useMemo(() => {
-    const sw = latLonToVec(box.south, box.west, R * 1.003);
-    const se = latLonToVec(box.south, box.east, R * 1.003);
-    const ne = latLonToVec(box.north, box.east, R * 1.003);
-    const nw = latLonToVec(box.north, box.west, R * 1.003);
+    const sw = latLonToVec(box.south, box.west, GLOBE_R * 1.003);
+    const se = latLonToVec(box.south, box.east, GLOBE_R * 1.003);
+    const ne = latLonToVec(box.north, box.east, GLOBE_R * 1.003);
+    const nw = latLonToVec(box.north, box.west, GLOBE_R * 1.003);
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(new Float32Array([...sw.toArray(), ...se.toArray(), ...ne.toArray(), ...nw.toArray()]), 3));
     g.setAttribute("uv", new THREE.BufferAttribute(new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]), 2));
@@ -87,7 +85,7 @@ export function GlobePins() {
   return (
     <group>
       {pins.map((p) => {
-        const at = latLonToVec(p.lat, p.lon, R * 1.012);
+        const at = latLonToVec(p.lat, p.lon, GLOBE_R * 1.012);
         return (
           <mesh key={p.id} position={at}>
             <sphereGeometry args={[0.12, 12, 10]} />
