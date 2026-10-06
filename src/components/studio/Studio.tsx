@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { useCad } from "@/lib/cad/store";
 import { SAMPLE_CATALOG } from "@/lib/cad/samples";
 import { exportJson, exportSurveyCsv, exportSvg } from "@/lib/cad/export";
+import { exportDxf, exportIfc, exportPdf } from "@/lib/cad/export-cad";
+import { exportPng } from "@/lib/cad/export-png";
 import { BrandMark } from "./Mark";
 import { Toolbar } from "./Toolbar";
 import { Viewport2D, commitPolyline } from "./Viewport2D";
@@ -30,6 +32,8 @@ import { StatusBar } from "./StatusBar";
 import { AiPanel, Dock } from "./Dock";
 import { YearTimeline } from "./YearTimeline";
 import type { Project, Tool, ViewMode } from "@/lib/cad/types";
+import { projectSite } from "@/lib/gis/site";
+import { isTypingTarget } from "@/lib/keyboard";
 
 const KEY_TOOLS: Record<string, Tool> = {
   KeyV: "select",
@@ -58,7 +62,13 @@ export function Studio() {
   const [posterOpen, setPosterOpen] = useState(false);
 
   useEffect(() => {
-    const done = () => useCad.getState().setView("globe");
+    // Boot on the project site: Earth view, flown down to the site with imagery under it.
+    const done = () => {
+      const st = useCad.getState();
+      const site = projectSite(st.project);
+      st.setView("globe");
+      st.setGlobe({ lat: site.lat, lon: site.lon, flyNonce: st.globe.flyNonce + 1 });
+    };
     const r = useCad.persist.rehydrate() as void | Promise<void>;
     if (r && typeof r.then === "function") void r.then(done);
     else done();
@@ -66,8 +76,11 @@ export function Studio() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      const typing = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
+      // Text fields own every key (select-all, undo, letters). Only Escape leaves the field.
+      if (isTypingTarget(e)) {
+        if (e.code === "Escape") (document.activeElement as HTMLElement | null)?.blur();
+        return;
+      }
       const st = useCad.getState();
       if ((e.metaKey || e.ctrlKey) && e.code === "KeyZ") {
         e.preventDefault();
@@ -93,10 +106,6 @@ export function Studio() {
       if (e.code === "F1") {
         e.preventDefault();
         st.setHelpOpen(!st.helpOpen);
-        return;
-      }
-      if (typing) {
-        if (e.code === "Escape") (e.target as HTMLElement).blur();
         return;
       }
       if (e.code === "Escape") {
@@ -256,12 +265,41 @@ function IconBtn({ children, onClick, label, className }: { children: React.Reac
   );
 }
 
+const EXPORTS: { label: string; hint: string; run: (p: Project) => void | Promise<void>; done: string }[] = [
+  { label: "JSON", hint: "Astranov project (re-importable)", run: exportJson, done: "Project JSON downloaded" },
+  { label: "DXF", hint: "AutoCAD R12 plan, layers, mm", run: exportDxf, done: "DXF plan downloaded" },
+  { label: "PDF", hint: "A3 vector sheet, to scale", run: exportPdf, done: "PDF sheet downloaded" },
+  { label: "PNG", hint: "Plan image, A4 at 300 dpi", run: (p) => exportPng(p, useCad.getState().units), done: "PNG plan downloaded" },
+  { label: "IFC", hint: "IFC2X3 walls, openings, doors, windows, spaces", run: exportIfc, done: "IFC model downloaded" },
+  { label: "SVG", hint: "Plan sheet as SVG", run: exportSvg, done: "SVG sheet downloaded" },
+  { label: "CSV", hint: "Survey points", run: exportSurveyCsv, done: "CSV downloaded" },
+];
+
 function ExportMenu() {
   const project = useCad((s) => s.project);
   const loadProject = useCad((s) => s.loadProject);
+  const [open, setOpen] = useState(false);
   return (
     <>
-      <IconBtn label="Export JSON" onClick={() => { exportJson(project); toast.success("Project JSON downloaded"); }}><Download className="size-4" /></IconBtn>
+      <div className="relative">
+        <IconBtn label="Export" onClick={() => setOpen((o) => !o)}><Download className="size-4" /></IconBtn>
+        {open && (
+          <>
+            <button type="button" aria-label="Close export menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} />
+            <div role="menu" data-testid="export-menu" className="absolute right-0 top-10 z-50 w-64 rounded-md bg-surface p-1 shadow-lg ring-1 ring-border">
+              {EXPORTS.map((x) => (
+                <button key={x.label} type="button" role="menuitem" onClick={() => {
+                  setOpen(false);
+                  Promise.resolve().then(() => x.run(project)).then(() => toast.success(x.done), (err) => toast.error(`${x.label} export failed: ${err instanceof Error ? err.message : String(err)}`));
+                }} className="flex w-full items-baseline gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-elevated">
+                  <span className="w-9 font-mono text-[11px] text-fg">{x.label}</span>
+                  <span className="text-[11px] text-muted">{x.hint}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
       <label className="flex size-9 cursor-pointer items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-fg" title="Import JSON">
         <Upload className="size-4" />
         <input type="file" accept="application/json,.json" className="hidden" onChange={async (e) => {
@@ -270,7 +308,7 @@ function ExportMenu() {
           if (!file) return;
           try {
             const data = JSON.parse(await file.text()) as Project;
-            if (!data?.entities || !data?.layers) throw new Error("Not an Astranov BIMCAD project");
+            if (!data?.entities || !data?.layers) throw new Error("Not an Astranov Architect project");
             loadProject(data);
             toast.success("Project opened");
           } catch {
@@ -294,7 +332,7 @@ function ProjectsOverlay({ onPoster }: { onPoster: () => void }) {
           <div>
             <div className="flex items-center gap-2 text-primary">
               <BrandMark className="size-6" />
-              <span className="text-xs font-medium tracking-[0.18em]">ASTRANOV ARCHITECT BIMCAD</span>
+              <span className="text-xs font-medium tracking-[0.18em]">ASTRANOV ARCHITECT FORENSIC TOPOBIMCAD</span>
             </div>
             <h1 className="mt-2 text-2xl font-medium tracking-tight text-balance">Open a model</h1>
             <p className="mt-1 max-w-md text-sm text-muted text-pretty">Millimetre kernel. Architecture, mechanical, survey. Snap, ortho, IFC properties, quantities, inverse.</p>
@@ -315,8 +353,9 @@ function ProjectsOverlay({ onPoster }: { onPoster: () => void }) {
           <Ghost onClick={() => neu("architecture")}>New architectural</Ghost>
           <Ghost onClick={() => neu("mechanical")}>New mechanical</Ghost>
           <Ghost onClick={() => neu("survey")}>New survey</Ghost>
-          <Ghost onClick={() => { exportSvg(useCad.getState().project); toast.success("SVG sheet downloaded"); }}>Export SVG</Ghost>
-          <Ghost onClick={() => { exportSurveyCsv(useCad.getState().project); toast.success("CSV downloaded"); }}>Export CSV</Ghost>
+          {EXPORTS.filter((x) => x.label !== "JSON").map((x) => (
+            <Ghost key={x.label} onClick={() => { Promise.resolve().then(() => x.run(useCad.getState().project)).then(() => toast.success(x.done), (err) => toast.error(String(err))); }}>Export {x.label}</Ghost>
+          ))}
           <Ghost onClick={() => { useCad.getState().setProjectsOpen(false); onPoster(); }}>Product poster</Ghost>
         </div>
       </div>
@@ -335,7 +374,7 @@ function HelpOverlay() {
       <div className="relative max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl bg-surface p-6 sm:rounded-xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <div className="font-mono text-[10px] tracking-[0.18em] text-subtle">ASTRANOV ARCHITECT BIMCAD</div>
+            <div className="font-mono text-[10px] tracking-[0.18em] text-subtle">ASTRANOV ARCHITECT FORENSIC TOPOBIMCAD</div>
             <h2 className="mt-1 text-lg font-medium">Instruments</h2>
           </div>
           <button type="button" onClick={() => useCad.getState().setHelpOpen(false)} className="size-10 text-muted"><X className="mx-auto size-4" /></button>
