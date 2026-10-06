@@ -12,6 +12,8 @@ function applyLayer(id: string, label: string) {
 
 export function YearTimeline() {
   const layer = useCad((s) => s.globe.layer);
+  const sub = useCad((s) => s.forensicSub);
+  const setSub = useCad((s) => s.setForensicSub);
   const [playing, setPlaying] = useState(false);
   const yearIndex = WAYBACK_YEARS.findIndex((y) => layer === `wb:${y.release}`);
   const activeYear = yearIndex >= 0 ? WAYBACK_YEARS[yearIndex] : null;
@@ -34,7 +36,20 @@ export function YearTimeline() {
   return (
     <div className="shrink-0 border-b border-border bg-surface px-2 py-2 sm:px-3">
       <div className="flex items-center gap-2">
-        <span className="shrink-0 font-mono text-[10px] tracking-[0.16em] text-subtle">TOPO</span>
+        <span className="shrink-0 font-mono text-[10px] tracking-[0.16em] text-subtle">FORENSIC</span>
+        {(["topo", "vault", "measure"] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setSub(id)}
+            className={cn(
+              "shrink-0 rounded-sm px-2 py-1 text-[11px]",
+              sub === id ? "bg-elevated text-fg" : "text-muted hover:text-fg",
+            )}
+          >
+            {id === "topo" ? "ToPo" : id === "vault" ? "Vault" : "Measure"}
+          </button>
+        ))}
         <button
           type="button"
           onClick={() => setPlaying((v) => !v)}

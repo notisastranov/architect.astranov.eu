@@ -56,8 +56,6 @@ export function Studio() {
   const aiOpen = useCad((s) => s.aiOpen);
   const [mobileDock, setMobileDock] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
-  const rightTab = useCad((s) => s.rightTab);
-  const forensicSub = useCad((s) => s.forensicSub);
 
   useEffect(() => {
     const done = () => useCad.getState().setView("globe");
@@ -143,7 +141,7 @@ export function Studio() {
         <div className="flex w-full min-w-0 shrink-0 border-b border-border md:hidden">
             <Toolbar orientation="horizontal" />
           </div>
-          {rightTab === "forensic" && forensicSub === "topo" && <YearTimeline />}
+          <YearTimeline />
           <div className="flex min-h-0 min-w-0 flex-1">
             {view === "globe" && (
               <div className="min-h-0 min-w-0 flex-1">
@@ -213,7 +211,7 @@ function TopBar({ onMobileDock, onPoster }: { onMobileDock: () => void; onPoster
         <BrandMark className="size-5 text-primary" />
         <span className="flex min-w-0 flex-col leading-none">
           <span className="text-[9px] font-medium tracking-[0.18em] text-muted">ASTRANOV</span>
-          <span className="mt-0.5 text-sm font-semibold tracking-tight">BIMCAD</span>
+          <span className="mt-0.5 text-sm font-semibold tracking-tight">Forensic TopoBimCad</span>
         </span>
       </button>
       <span className="hidden h-4 w-px bg-border sm:block" />

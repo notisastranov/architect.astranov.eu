@@ -4,7 +4,7 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Astranov Architect BIMCAD";
+const APP_NAME = "Astranov Architect Forensic TopoBimCad";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -15,7 +15,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Astranov Architect BIMCAD — precision CAD, BIM and survey. Architecture, mechanical and geodetic modelling with millimetre accuracy and an AI draughtsman.",
+          "Astranov Architect Forensic TopoBimCad. Globe, Greek cadastre, historical years, Italian vault sheets, angles and metres.",
       },
       { name: "theme-color", content: "#0c0d0e" },
     ],
