@@ -157,6 +157,12 @@ export type Entity =
 
 export type EntityKind = Entity["kind"];
 
+export interface ProjectSite {
+  lat: number;
+  lon: number;
+  label?: string;
+}
+
 export interface Project {
   id: Id;
   name: string;
@@ -168,6 +174,8 @@ export interface Project {
   wallHeight: number;
   wallThickness: number;
   gridSize: number;
+  /** WGS84 position of plan origin (0,0). Unset until the owner places the project on Earth. */
+  site?: ProjectSite;
 }
 
 export interface SnapConfig {

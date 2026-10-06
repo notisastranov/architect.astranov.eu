@@ -15,24 +15,26 @@ export interface ArchitecturalDeclaration {
   statement: string;
 }
 
+/** Empty until the owner fills it in. Coordinates come from the project site. */
 export const DEFAULT_SITE: SiteContext = {
-  name: "Rose Stone Villa",
-  municipality: "Rhodes / Ρόδος",
-  plot: "Own property on the live Hellenic Cadastre sheet",
+  name: "",
+  municipality: "",
+  plot: "",
   lat: 36.434,
   lon: 28.217,
-  cadastre: "Ελληνικό Κτηματολόγιο BASEMAP · IGM Carta dell'isola di Rodi 1922/35",
+  cadastre: "",
 };
 
 export const DEFAULT_DECLARATION: ArchitecturalDeclaration = {
   title: "Architectural declaration · Δήλωση αρχιτέκτονα",
-  author: "Astranov Architect",
-  client: "Owner",
-  program: "Residence and landscape on the registered plot",
-  statement:
-    "The proposal sits on the real topographic diagram of the area — Hellenic Cadastre orthophoto and, where they survive, the Italian IGM sheets of Rhodes. Development and building are drawn in millimetres on that ground. The owner may edit the BIM; the film begins from the whole map and focuses down to the finished work.",
+  author: "",
+  client: "",
+  program: "",
+  statement: "",
 };
 
 export function siteLine(site: SiteContext) {
-  return `${site.name} · ${site.municipality} · ${site.lat.toFixed(5)}° N ${site.lon.toFixed(5)}° E · ${site.cadastre}`;
+  return [site.name, site.municipality, `${site.lat.toFixed(5)}° N ${site.lon.toFixed(5)}° E`, site.cadastre]
+    .filter((x) => x && x.trim())
+    .join(" · ");
 }
