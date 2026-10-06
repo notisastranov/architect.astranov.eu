@@ -4,20 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useCad } from "@/lib/cad/store";
 import { fetchKtimaTile, inGreece, tilesAround, type GeoTile, KTIMA_HOME } from "@/lib/gis/ktima";
+import { GLOBE_PROVIDERS, providerById } from "@/lib/gis/layers";
+import { usePins } from "@/lib/gis/pins";
+import { latLonToVec } from "@/lib/gis/vec";
+import { GlobeImagery, GlobePins } from "./GlobeImagery";
 
 const R = 100;
 const TEX_COLOR = "https://unpkg.com/three-globe@2.44.1/example/img/earth-blue-marble.jpg";
 const TEX_BUMP = "https://unpkg.com/three-globe@2.44.1/example/img/earth-topology.png";
 
-export function latLonToVec(lat: number, lon: number, r = R) {
-  const phi = THREE.MathUtils.degToRad(90 - lat);
-  const theta = THREE.MathUtils.degToRad(lon + 180);
-  return new THREE.Vector3(
-    -r * Math.sin(phi) * Math.cos(theta),
-    r * Math.cos(phi),
-    r * Math.sin(phi) * Math.sin(theta),
-  );
-}
+export { latLonToVec };
 
 function vecToLatLon(v: THREE.Vector3) {
   const n = v.clone().normalize();
@@ -31,7 +27,9 @@ export function ViewportGlobe() {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
   const layer = useCad((s) => s.globe.layer);
+  const globe = useCad((s) => s.globe);
   const setGlobe = useCad((s) => s.setGlobe);
+  const addPin = usePins((s) => s.add);
 
   if (!ready) {
     return <div className="flex h-full items-center justify-center bg-bg text-sm text-muted">Loading Earth…</div>;
@@ -41,7 +39,7 @@ export function ViewportGlobe() {
     <div className="relative h-full w-full bg-[#05070d]">
       <Canvas
         dpr={[1, 1.75]}
-        camera={{ position: latLonToVec(24, 22, R * 3.15).toArray(), fov: 38, near: 0.05, far: 4000 }}
+        camera={{ position: latLonToVec(24, 22, R * 3.15).toArray(), fov: 38, near: 0.02, far: 4000 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
       >
@@ -53,33 +51,37 @@ export function ViewportGlobe() {
         <Earth />
         <Atmosphere />
         <GreeceMarker />
-        {layer !== "off" && <KtimaOverlay />}
+        {(layer === "BASEMAP" || layer === "ktima") && <KtimaOverlay />}
+        <GlobeImagery lat={globe.lat} lon={globe.lon} alt={globe.alt} layer={layer} />
+        <GlobePins />
         <GlobeRig />
         <OrbitControls
           makeDefault
           enableDamping
-          dampingFactor={0.06}
-          minDistance={R + 0.18}
+          dampingFactor={0.08}
+          minDistance={R + 0.035}
           maxDistance={R * 6}
           enablePan={false}
-          zoomSpeed={0.85}
+          zoomSpeed={0.72}
         />
       </Canvas>
       <GlobeHud />
       <button
         type="button"
-        onClick={() => setGlobe({ flyNonce: useCad.getState().globe.flyNonce + 1, lat: 36.434, lon: 28.217 })}
+        onClick={() => addPin(useCad.getState().globe.lat, useCad.getState().globe.lon)}
+        className="absolute right-3 bottom-12 rounded-sm bg-elevated/90 px-2.5 py-1.5 font-mono text-[10px] tracking-wide text-muted uppercase hover:text-fg"
+      >
+        Pin
+      </button>
+      <button
+        type="button"
+        onClick={() => setGlobe({ flyNonce: useCad.getState().globe.flyNonce + 1, lat: 36.434, lon: 28.217, layer: "esri-imagery" })}
         className="absolute right-3 bottom-3 rounded-sm bg-elevated/90 px-2.5 py-1.5 font-mono text-[10px] tracking-wide text-muted uppercase hover:text-fg"
       >
         Rhodes
       </button>
-      <a
-        href={KTIMA_HOME}
-        target="_blank"
-        rel="noreferrer"
-        className="absolute bottom-3 left-3 font-mono text-[9px] tracking-wide text-subtle uppercase hover:text-muted"
-      >
-        Layers · Ελληνικό Κτηματολόγιο
+      <a href={KTIMA_HOME} target="_blank" rel="noreferrer" className="absolute bottom-3 left-3 max-w-[60%] font-mono text-[9px] tracking-wide text-subtle uppercase hover:text-muted">
+        {providerById(layer).attribution}
       </a>
     </div>
   );
@@ -92,7 +94,7 @@ function Earth() {
   color.anisotropy = 8;
   return (
     <mesh>
-      <sphereGeometry args={[R, 96, 64]} />
+      <sphereGeometry args={[R, 128, 96]} />
       <meshStandardMaterial map={color} bumpMap={bump} bumpScale={0.55} roughness={0.82} metalness={0.04} />
     </mesh>
   );
@@ -122,26 +124,26 @@ function GlobeRig() {
   const controls = useThree((s) => s.controls) as unknown as {
     target?: THREE.Vector3;
     update?: () => void;
-    minDistance?: number;
   } | null;
   const flyNonce = useCad((s) => s.globe.flyNonce);
   const lastFly = useRef(0);
+  const fly = useRef<{ cam: THREE.Vector3; target: THREE.Vector3 } | null>(null);
 
   useEffect(() => {
     if (!flyNonce || flyNonce === lastFly.current) return;
     lastFly.current = flyNonce;
     const { lat, lon } = useCad.getState().globe;
-    const target = latLonToVec(lat, lon, R);
-    const cam = latLonToVec(lat, lon, R + 7);
-    camera.position.copy(cam);
-    if (controls?.target) {
-      controls.target.copy(target);
-      controls.update?.();
-    }
-    useCad.getState().setStatus("Flying to site · Κτηματολόγιο layers arm when you close in");
-  }, [flyNonce, camera, controls]);
+    fly.current = { cam: latLonToVec(lat, lon, R + 2.4), target: latLonToVec(lat, lon, R) };
+    useCad.getState().setStatus("Flying in · imagery sharpens toward the city");
+  }, [flyNonce]);
 
   useFrame(() => {
+    if (fly.current) {
+      camera.position.lerp(fly.current.cam, 0.06);
+      controls?.target?.lerp(fly.current.target, 0.08);
+      controls?.update?.();
+      if (camera.position.distanceTo(fly.current.cam) < 0.15) fly.current = null;
+    }
     const look = camera.position.clone().normalize().multiplyScalar(R);
     const { lat, lon } = vecToLatLon(look);
     const dist = camera.position.length() - R;
@@ -156,7 +158,6 @@ function GlobeRig() {
 function KtimaOverlay() {
   const globe = useCad((s) => s.globe);
   const [tiles, setTiles] = useState<GeoTile[]>([]);
-
   useEffect(() => {
     if (!inGreece(globe.lat, globe.lon) || globe.alt > 28) {
       setTiles([]);
@@ -166,7 +167,6 @@ function KtimaOverlay() {
     const grid = span < 0.08 ? 3 : span < 0.6 ? 2 : 1;
     setTiles(tilesAround(globe.lat, globe.lon, span, grid));
   }, [globe.lat, globe.lon, globe.alt, globe.layer]);
-
   if (!tiles.length) return null;
   return (
     <group>
@@ -181,7 +181,6 @@ const texCache = new Map<string, THREE.Texture | "pending" | "fail">();
 
 function KtimaTile({ tile }: { tile: GeoTile }) {
   const [tex, setTex] = useState<THREE.Texture | null>(null);
-
   useEffect(() => {
     let live = true;
     const cached = texCache.get(tile.key);
@@ -199,12 +198,10 @@ function KtimaTile({ tile }: { tile: GeoTile }) {
           return;
         }
         const img = new Image();
-        img.crossOrigin = "anonymous";
         img.onload = () => {
           const t = new THREE.Texture(img);
           t.colorSpace = THREE.SRGBColorSpace;
           t.needsUpdate = true;
-          t.anisotropy = 8;
           texCache.set(tile.key, t);
           if (live) setTex(t);
         };
@@ -216,21 +213,18 @@ function KtimaTile({ tile }: { tile: GeoTile }) {
       live = false;
     };
   }, [tile.key, tile.west, tile.south, tile.east, tile.north]);
-
   const mesh = useMemo(() => {
     const sw = latLonToVec(tile.south, tile.west, R * 1.004);
     const se = latLonToVec(tile.south, tile.east, R * 1.004);
     const ne = latLonToVec(tile.north, tile.east, R * 1.004);
     const nw = latLonToVec(tile.north, tile.west, R * 1.004);
     const g = new THREE.BufferGeometry();
-    const pos = new Float32Array([...sw.toArray(), ...se.toArray(), ...ne.toArray(), ...nw.toArray()]);
-    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array([...sw.toArray(), ...se.toArray(), ...ne.toArray(), ...nw.toArray()]), 3));
     g.setAttribute("uv", new THREE.BufferAttribute(new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), 2));
     g.setIndex([0, 1, 2, 0, 2, 3]);
     g.computeVertexNormals();
     return g;
   }, [tile.west, tile.south, tile.east, tile.north]);
-
   if (!tex) return null;
   return (
     <mesh geometry={mesh}>
@@ -242,22 +236,19 @@ function KtimaTile({ tile }: { tile: GeoTile }) {
 function GlobeHud() {
   const globe = useCad((s) => s.globe);
   const setGlobe = useCad((s) => s.setGlobe);
-  const armed = inGreece(globe.lat, globe.lon) && globe.alt < 28;
   return (
     <div className="pointer-events-none absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
       <div className="rounded-sm bg-bg/70 px-2 py-1.5 font-mono text-[10px] text-muted">
-        <div className="tracking-[0.16em] text-subtle uppercase">Earth · site</div>
+        <div className="tracking-[0.16em] text-subtle uppercase">Earth · WGS84</div>
         <div className="tabular text-fg">
-          {globe.lat.toFixed(4)}° N · {globe.lon.toFixed(4)}° E
+          {globe.lat.toFixed(5)}° N · {globe.lon.toFixed(5)}° E
         </div>
-        <div className="text-subtle">{armed ? "Κτηματολόγιο BASEMAP live" : "Zoom into Greece for cadastre layers"}</div>
+        <div className="text-subtle">{providerById(globe.layer).name} · zoom to the city</div>
       </div>
-      <div className="pointer-events-auto flex gap-1">
-        <LayerChip
-          on={globe.layer === "BASEMAP"}
-          label="Orthophoto"
-          onClick={() => setGlobe({ layer: globe.layer === "BASEMAP" ? "off" : "BASEMAP" })}
-        />
+      <div className="pointer-events-auto flex max-w-[58%] flex-wrap justify-end gap-1">
+        {GLOBE_PROVIDERS.map((p) => (
+          <LayerChip key={p.id} on={globe.layer === p.id} label={p.name} onClick={() => setGlobe({ layer: p.id })} />
+        ))}
       </div>
     </div>
   );
@@ -265,13 +256,7 @@ function GlobeHud() {
 
 function LayerChip({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-sm px-2 py-1 font-mono text-[10px] tracking-wide uppercase ${
-        on ? "bg-primary text-primary-fg" : "bg-elevated text-muted hover:text-fg"
-      }`}
-    >
+    <button type="button" onClick={onClick} className={`rounded-sm px-2 py-1 font-mono text-[10px] tracking-wide uppercase ${on ? "bg-primary text-primary-fg" : "bg-elevated text-muted hover:text-fg"}`}>
       {label}
     </button>
   );
