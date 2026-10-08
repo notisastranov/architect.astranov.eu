@@ -22,8 +22,7 @@ import { SAMPLE_CATALOG } from "@/lib/cad/samples";
 import { exportJson, exportSurveyCsv, exportSvg } from "@/lib/cad/export";
 import { BrandMark } from "./Mark";
 import { Toolbar } from "./Toolbar";
-import { Viewport2D, commitPolyline } from "./Viewport2D";
-import { Viewport3D } from "./Viewport3D";
+import { commitPolyline } from "./Viewport2D";
 import { ViewportGlobe } from "./ViewportGlobe";
 import { CommandBar } from "./CommandBar";
 import { StatusBar } from "./StatusBar";
@@ -31,6 +30,7 @@ import { AiPanel, Dock } from "./Dock";
 import { YearTimeline } from "./YearTimeline";
 import { FieldDossier } from "./FieldDossier";
 import { RaisePanel } from "./RaisePanel";
+import { BoardStage, ViewBoardBar } from "./ViewBoards";
 import type { Project, Tool, ViewMode } from "@/lib/cad/types";
 
 const KEY_TOOLS: Record<string, Tool> = {
@@ -60,10 +60,8 @@ export function Studio() {
   const [posterOpen, setPosterOpen] = useState(false);
 
   useEffect(() => {
-    const done = () => useCad.getState().setView("globe");
     const r = useCad.persist.rehydrate() as void | Promise<void>;
-    if (r && typeof r.then === "function") void r.then(done);
-    else done();
+    if (r && typeof r.then === "function") void r.then(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -143,25 +141,20 @@ export function Studio() {
         <div className="flex w-full min-w-0 shrink-0 border-b border-border md:hidden">
             <Toolbar orientation="horizontal" />
           </div>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
           <YearTimeline />
-          <FieldDossier />
-          <RaisePanel />
-          <div className="flex min-h-0 min-w-0 flex-1">
-            {view === "globe" && (
-              <div className="min-h-0 min-w-0 flex-1">
+          <ViewBoardBar />
+          <div className="h-[62dvh] shrink-0">
+            {view === "globe" ? (
+              <div className="h-full min-h-0 min-w-0">
                 <ViewportGlobe />
               </div>
+            ) : (
+              <div className="h-full"><BoardStage /></div>
             )}
-            {(view === "plan" || view === "split") && (
-              <div className={cn("min-h-0 min-w-0", view === "split" ? "w-1/2 border-r border-border" : "flex-1")}>
-                <Viewport2D />
-              </div>
-            )}
-            {(view === "model" || view === "split") && (
-              <div className={cn("min-h-0 min-w-0", view === "split" ? "w-1/2" : "flex-1")}>
-                <Viewport3D />
-              </div>
-            )}
+          </div>
+          <FieldDossier />
+          <RaisePanel />
           </div>
           <CommandBar />
           <StatusBar />

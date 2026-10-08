@@ -69,6 +69,9 @@ export interface CadState {
   forensicSub: "topo" | "vault" | "measure";
   /** Stroke weight of the corner arcs and the offset length tags. */
   measureWeight: number;
+  boards: Record<BoardId, boolean>;
+  aiImages: string[];
+  aiVideos: string[];
   fitNonce: number;
   dirtyFit: boolean;
   overlays: OverlaySheet[];
@@ -90,6 +93,9 @@ export interface CadState {
   setRightTab: (t: CadState["rightTab"]) => void;
   setForensicSub: (t: CadState["forensicSub"]) => void;
   setMeasureWeight: (n: number) => void;
+  toggleBoard: (id: BoardId) => void;
+  setAllBoards: (on: boolean) => void;
+  pushAiMedia: (kind: "images" | "videos", src: string) => void;
   setAiOpen: (v: boolean) => void;
   setInspectOpen: (v: boolean) => void;
   setHelpOpen: (v: boolean) => void;
@@ -124,6 +130,20 @@ export interface CadState {
   setPendingGcp: (p: { imgX: number; imgY: number } | null) => void;
   finishGcp: (world: Pt, geo?: { lon: number; lat: number }) => void;
 }
+
+export type BoardId = "forensic" | "topo" | "architect" | "mechanic" | "designer" | "images" | "videos";
+
+export const BOARD_IDS: BoardId[] = ["forensic", "topo", "architect", "mechanic", "designer", "images", "videos"];
+
+const ALL_BOARDS: Record<BoardId, boolean> = {
+  forensic: true,
+  topo: true,
+  architect: true,
+  mechanic: true,
+  designer: true,
+  images: true,
+  videos: true,
+};
 
 function pushHist(s: CadState, next: Project): Pick<CadState, "project" | "past" | "future"> {
   return {
@@ -162,6 +182,9 @@ export const useCad = create<CadState>()(
       rightTab: "forensic",
       forensicSub: "topo",
       measureWeight: 1.6,
+      boards: { ...ALL_BOARDS },
+      aiImages: ["/marmarades/house.jpg"],
+      aiVideos: ["/marmarades/film.mp4", "/marmarades/film-wide.mp4"],
       fitNonce: 1,
       dirtyFit: true,
       overlays: [],
@@ -195,6 +218,25 @@ export const useCad = create<CadState>()(
       setRightTab: (t) => set({ rightTab: t, aiOpen: t === "ai" ? true : get().aiOpen }),
       setForensicSub: (t) => set({ forensicSub: t, rightTab: "forensic" }),
       setMeasureWeight: (n) => set({ measureWeight: Math.max(0.6, Math.min(5, n)) }),
+      toggleBoard: (id) => {
+        const boards = { ...get().boards, [id]: !get().boards[id] };
+        set({ boards, view: "plan" });
+      },
+      setAllBoards: (on) =>
+        set({
+          boards: Object.fromEntries(BOARD_IDS.map((id) => [id, on])) as Record<BoardId, boolean>,
+          view: "plan",
+        }),
+      pushAiMedia: (kind, src) => {
+        if (!src) return;
+        if (kind === "images") {
+          const aiImages = get().aiImages.includes(src) ? get().aiImages : [...get().aiImages, src];
+          set({ aiImages, boards: { ...get().boards, images: true } });
+        } else {
+          const aiVideos = get().aiVideos.includes(src) ? get().aiVideos : [...get().aiVideos, src];
+          set({ aiVideos, boards: { ...get().boards, videos: true } });
+        }
+      },
       setAiOpen: (v) => set({ aiOpen: v, rightTab: v ? "ai" : get().rightTab }),
       setInspectOpen: (v) => set({ inspectOpen: v }),
       setHelpOpen: (v) => set({ helpOpen: v }),
@@ -454,6 +496,7 @@ export const useCad = create<CadState>()(
         ortho: s.ortho,
         units: s.units,
         measureWeight: s.measureWeight,
+        boards: s.boards,
         cam: s.cam,
         globe: { ...s.globe, flyNonce: 0 },
       }),

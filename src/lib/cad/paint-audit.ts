@@ -62,6 +62,7 @@ export function paintSheetAudit(
   pal: Palette,
 ) {
   const st = useCad.getState();
+  if (!st.boards.forensic) return;
   const weight = Math.max(0.6, Math.min(5, st.measureWeight || 1.6));
   const rings = st.project.entities
     .map((e) => ({ e, pts: ringOf(e) }))

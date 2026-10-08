@@ -84,7 +84,10 @@ export function RaisePanel() {
       const ops = (Array.isArray(res.ops) ? res.ops : []) as AiOp[];
       if (ops.length) useCad.getState().applyAi(ops);
       useCad.getState().setView("plan");
-      if (res.photoUrl) setPhoto(res.photoUrl);
+      if (res.photoUrl) {
+        setPhoto(res.photoUrl);
+        useCad.getState().pushAiMedia("images", res.photoUrl);
+      }
       toast.success(res.message);
       if (res.photoUrl) {
         const started = await raiseFilm({ data: { photoUrl: res.photoUrl, prompt: res.photoPrompt, spacenet } });
@@ -94,6 +97,7 @@ export function RaisePanel() {
             const st = await raiseFilmStatus({ data: { requestId: started.requestId } });
             if (st.url) {
               setFilm(st.url);
+              useCad.getState().pushAiMedia("videos", st.url);
               break;
             }
             if (st.status === "failed" || st.status === "expired") break;

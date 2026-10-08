@@ -118,6 +118,7 @@ export function FieldDossier() {
         const st = await raiseFilmStatus({ data: { requestId: started.requestId } });
         if (st.url) {
           setMade((list) => [...list, st.url]);
+          useCad.getState().pushAiMedia("videos", st.url);
           setBrief("");
           toast.success("Το επόμενο βίντεο είναι έτοιμο.");
           return;

@@ -6,7 +6,6 @@ import { WAYBACK_YEARS } from "@/lib/gis/wayback";
 function applyLayer(id: string, label: string) {
   const globe = useCad.getState().globe;
   useCad.getState().setGlobe({ layer: id, flyNonce: globe.flyNonce + 1 });
-  useCad.getState().setView("globe");
   useCad.getState().setStatus(`${label} · historical ground under the sheet`);
 }
 
