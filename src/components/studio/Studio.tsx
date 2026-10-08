@@ -29,6 +29,7 @@ import { CommandBar } from "./CommandBar";
 import { StatusBar } from "./StatusBar";
 import { AiPanel, Dock } from "./Dock";
 import { YearTimeline } from "./YearTimeline";
+import { FieldDossier } from "./FieldDossier";
 import type { Project, Tool, ViewMode } from "@/lib/cad/types";
 
 const KEY_TOOLS: Record<string, Tool> = {
@@ -142,6 +143,7 @@ export function Studio() {
             <Toolbar orientation="horizontal" />
           </div>
           <YearTimeline />
+          <FieldDossier />
           <div className="flex min-h-0 min-w-0 flex-1">
             {view === "globe" && (
               <div className="min-h-0 min-w-0 flex-1">
