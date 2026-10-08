@@ -31,6 +31,8 @@ export function Viewport2D() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{ x: number; y: number; camX: number; camY: number } | null>(null);
   const spaceRef = useRef(false);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ dist: number; zoom: number; cx: number; cy: number; camX: number; camY: number } | null>(null);
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -107,7 +109,23 @@ export function Viewport2D() {
 
   const onPointerDown = (e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const st = useCad.getState();
+    if (pointers.current.size >= 2) {
+      const pts = [...pointers.current.values()];
+      const p = pts[0]!;
+      const q = pts[1]!;
+      panRef.current = null;
+      pinchRef.current = {
+        dist: Math.hypot(p.x - q.x, p.y - q.y) || 1,
+        zoom: st.cam.zoom,
+        cx: (p.x + q.x) / 2,
+        cy: (p.y + q.y) / 2,
+        camX: st.cam.x,
+        camY: st.cam.y,
+      };
+      return;
+    }
     if (e.button === 1 || e.button === 2 || spaceRef.current || st.tool === "pan") {
       panRef.current = { x: e.clientX, y: e.clientY, camX: st.cam.x, camY: st.cam.y };
       return;
@@ -118,6 +136,26 @@ export function Viewport2D() {
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pinch = pinchRef.current;
+    if (pinch && pointers.current.size >= 2) {
+      const pts = [...pointers.current.values()];
+      const p = pts[0]!;
+      const q = pts[1]!;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const dist = Math.hypot(p.x - q.x, p.y - q.y) || 1;
+      const zoom = Math.max(0.0004, Math.min(80, pinch.zoom * (dist / pinch.dist)));
+      const sx = pinch.cx - rect.left;
+      const sy = pinch.cy - rect.top;
+      const start = { x: pinch.camX, y: pinch.camY, zoom: pinch.zoom };
+      const before = screenToWorld({ x: sx, y: sy }, start, rect.width, rect.height);
+      const next = { x: pinch.camX, y: pinch.camY, zoom };
+      const after = screenToWorld({ x: sx, y: sy }, next, rect.width, rect.height);
+      useCad.getState().setCam({ zoom, x: pinch.camX + (before.x - after.x), y: pinch.camY + (before.y - after.y) });
+      return;
+    }
     const pan = panRef.current;
     const st = useCad.getState();
     if (pan) {
@@ -133,12 +171,28 @@ export function Viewport2D() {
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) pinchRef.current = null;
     panRef.current = null;
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {
       /* ignore */
     }
+  };
+
+  const zoomAboutCenter = (factor: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const st = useCad.getState();
+    const sx = rect.width / 2;
+    const sy = rect.height / 2;
+    const before = screenToWorld({ x: sx, y: sy }, st.cam, rect.width, rect.height);
+    const zoom = Math.max(0.0004, Math.min(80, st.cam.zoom * factor));
+    const cam = { ...st.cam, zoom };
+    const after = screenToWorld({ x: sx, y: sy }, cam, rect.width, rect.height);
+    useCad.getState().setCam({ zoom, x: cam.x + (before.x - after.x), y: cam.y + (before.y - after.y) });
   };
 
   const onWheel = (e: React.WheelEvent) => {
@@ -169,13 +223,21 @@ export function Viewport2D() {
     >
       <canvas
         ref={canvasRef}
-        className="block h-full w-full cursor-crosshair"
+        className="block h-full w-full cursor-crosshair touch-none"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onWheel={onWheel}
       />
+      <div className="absolute right-3 bottom-3 z-10 flex flex-col gap-1">
+        <button type="button" aria-label="Zoom in" onClick={() => zoomAboutCenter(1.35)} className="flex size-11 items-center justify-center rounded-sm bg-surface text-lg text-fg shadow">
+          +
+        </button>
+        <button type="button" aria-label="Zoom out" onClick={() => zoomAboutCenter(1 / 1.35)} className="flex size-11 items-center justify-center rounded-sm bg-surface text-lg text-fg shadow">
+          −
+        </button>
+      </div>
     </div>
   );
 }
