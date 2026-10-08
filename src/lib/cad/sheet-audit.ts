@@ -1,12 +1,15 @@
-import { angleAt, lengthOf } from "./forensic";
-import { dist, polygonArea } from "./geometry";
+import { cornerAngles, lengthOf } from "./forensic";
+import { dist } from "./geometry";
 import type { Entity, Pt } from "./types";
 
 export interface EdgeRead {
   i: number;
   metres: number;
   bearingDeg: number;
+  /** Inside the parcel. */
   angleDeg: number;
+  /** Outside the parcel, the other wedge of the same corner. */
+  exteriorDeg: number;
   a: Pt;
   b: Pt;
 }
@@ -42,22 +45,30 @@ export function ringOf(e: Entity): Pt[] | null {
 export function auditRing(pts: Pt[]): { edges: EdgeRead[]; areaM2: number } {
   const edges: EdgeRead[] = [];
   const n = pts.length;
+  let signed = 0;
+  for (let i = 0; i < n; i++) {
+    const p = pts[i]!;
+    const q = pts[(i + 1) % n]!;
+    signed += p.x * q.y - q.x * p.y;
+  }
+  const ccw = signed >= 0;
   for (let i = 0; i < n; i++) {
     const a = pts[i]!;
     const b = pts[(i + 1) % n]!;
     const prev = pts[(i - 1 + n) % n]!;
     const len = lengthOf(a, b);
-    const ang = angleAt(prev, a, b);
+    const ang = cornerAngles(prev, a, b, ccw);
     edges.push({
       i,
       metres: len.chordMm / 1000,
       bearingDeg: len.bearingDeg,
-      angleDeg: ang.degrees,
+      angleDeg: ang.interiorDeg,
+      exteriorDeg: ang.exteriorDeg,
       a,
       b,
     });
   }
-  return { edges, areaM2: polygonArea(pts) / 1e6 };
+  return { edges, areaM2: Math.abs(signed) / 2 / 1e6 };
 }
 
 /** Pair each new edge with the nearest vault edge. A shift is geometric, not a verdict. */

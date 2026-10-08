@@ -51,14 +51,14 @@ export function VaultAudit() {
   );
 }
 
-function RingList({ title, edges, area }: { title: string; edges: { i: number; metres: number; angleDeg: number; bearingDeg: number }[]; area: number }) {
+function RingList({ title, edges, area }: { title: string; edges: { i: number; metres: number; angleDeg: number; exteriorDeg?: number; bearingDeg: number }[]; area: number }) {
   return (
     <div>
       <div className="font-mono text-[10px] tracking-widest text-subtle uppercase">{title} · {area.toFixed(2)} m²</div>
       <ul className="mt-1 space-y-0.5 font-mono text-[11px]">
         {edges.map((e) => (
           <li key={e.i}>
-            L{e.i + 1} {e.metres.toFixed(2)} m · ∠ {e.angleDeg.toFixed(2)}° · brg {e.bearingDeg.toFixed(2)}°
+            L{e.i + 1} {e.metres.toFixed(2)} m · in {e.angleDeg.toFixed(2)}° · out {(e.exteriorDeg ?? 360 - e.angleDeg).toFixed(2)}°
           </li>
         ))}
       </ul>

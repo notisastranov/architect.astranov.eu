@@ -14,6 +14,7 @@ export function YearTimeline() {
   const layer = useCad((s) => s.globe.layer);
   const sub = useCad((s) => s.forensicSub);
   const setSub = useCad((s) => s.setForensicSub);
+  const weight = useCad((s) => s.measureWeight);
   const [playing, setPlaying] = useState(false);
   const yearIndex = WAYBACK_YEARS.findIndex((y) => layer === `wb:${y.release}`);
   const activeYear = yearIndex >= 0 ? WAYBACK_YEARS[yearIndex] : null;
@@ -71,6 +72,17 @@ export function YearTimeline() {
             applyLayer(`wb:${y.release}`, String(y.year));
           }}
           className="h-8 min-w-0 flex-1 accent-[var(--color-primary,currentColor)]"
+        />
+        <span className="shrink-0 font-mono text-[10px] tracking-wide text-subtle">WT</span>
+        <input
+          aria-label="Measurement weight"
+          type="range"
+          min={0.6}
+          max={5}
+          step={0.1}
+          value={weight}
+          onChange={(e) => useCad.getState().setMeasureWeight(Number(e.target.value))}
+          className="h-8 w-16 shrink-0 accent-[var(--color-primary,currentColor)]"
         />
         <span className="shrink-0 font-mono text-xs tabular-nums text-fg">
           {activeYear ? activeYear.year : layer === "BASEMAP" ? "Ktima" : "Now"}

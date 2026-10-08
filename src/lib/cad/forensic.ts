@@ -37,6 +37,22 @@ export function angleAt(a: Pt, b: Pt, c: Pt): AngleReading {
   return { degrees, dms: formatDms(degrees), interior: degrees };
 }
 
+/** Interior and exterior degrees at vertex v. ccw is the ring's winding in y-up coordinates. */
+export function cornerAngles(prev: Pt, v: Pt, next: Pt, ccw: boolean): { interiorDeg: number; exteriorDeg: number } {
+  const d1x = v.x - prev.x;
+  const d1y = v.y - prev.y;
+  const d2x = next.x - v.x;
+  const d2y = next.y - v.y;
+  let turn = Math.atan2(d2y, d2x) - Math.atan2(d1y, d1x);
+  while (turn <= -Math.PI) turn += Math.PI * 2;
+  while (turn > Math.PI) turn -= Math.PI * 2;
+  let interior = ccw ? Math.PI - turn : Math.PI + turn;
+  while (interior <= 0) interior += Math.PI * 2;
+  while (interior > Math.PI * 2) interior -= Math.PI * 2;
+  const exterior = Math.PI * 2 - interior;
+  return { interiorDeg: (interior * 180) / Math.PI, exteriorDeg: (exterior * 180) / Math.PI };
+}
+
 export function lengthOf(a: Pt, b: Pt): LengthReading {
   const chordMm = dist(a, b);
   const bearingDeg = azimuthDeg(a, b);

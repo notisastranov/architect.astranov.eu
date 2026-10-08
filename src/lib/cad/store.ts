@@ -67,6 +67,8 @@ export interface CadState {
   projectsOpen: boolean;
   rightTab: "properties" | "layers" | "quantities" | "survey" | "ai" | "maps" | "forensic";
   forensicSub: "topo" | "vault" | "measure";
+  /** Stroke weight of the corner arcs and the offset length tags. */
+  measureWeight: number;
   fitNonce: number;
   dirtyFit: boolean;
   overlays: OverlaySheet[];
@@ -87,6 +89,7 @@ export interface CadState {
   setPrompt: (s: string) => void;
   setRightTab: (t: CadState["rightTab"]) => void;
   setForensicSub: (t: CadState["forensicSub"]) => void;
+  setMeasureWeight: (n: number) => void;
   setAiOpen: (v: boolean) => void;
   setInspectOpen: (v: boolean) => void;
   setHelpOpen: (v: boolean) => void;
@@ -158,6 +161,7 @@ export const useCad = create<CadState>()(
       projectsOpen: false,
       rightTab: "forensic",
       forensicSub: "topo",
+      measureWeight: 1.6,
       fitNonce: 1,
       dirtyFit: true,
       overlays: [],
@@ -190,6 +194,7 @@ export const useCad = create<CadState>()(
       setPrompt: (s) => set({ prompt: s }),
       setRightTab: (t) => set({ rightTab: t, aiOpen: t === "ai" ? true : get().aiOpen }),
       setForensicSub: (t) => set({ forensicSub: t, rightTab: "forensic" }),
+      setMeasureWeight: (n) => set({ measureWeight: Math.max(0.6, Math.min(5, n)) }),
       setAiOpen: (v) => set({ aiOpen: v, rightTab: v ? "ai" : get().rightTab }),
       setInspectOpen: (v) => set({ inspectOpen: v }),
       setHelpOpen: (v) => set({ helpOpen: v }),
@@ -448,6 +453,7 @@ export const useCad = create<CadState>()(
         snap: s.snap,
         ortho: s.ortho,
         units: s.units,
+        measureWeight: s.measureWeight,
         cam: s.cam,
         globe: { ...s.globe, flyNonce: 0 },
       }),
