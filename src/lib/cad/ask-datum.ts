@@ -1,16 +1,25 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { authMiddleware } from "@/lib/auth/middleware";
 
 const Input = z.object({
   prompt: z.string().min(1).max(4000),
   model: z.string().max(12000),
   discipline: z.string().max(40),
   units: z.string().max(8),
+  spacenet: z.boolean().optional(),
 });
 
 export const askDatum = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator((input: unknown) => Input.parse(input))
-  .handler(async ({ data }): Promise<{ ok: true; message: string; opsText: string } | { ok: false; error: string }> => {
+  .handler(async ({ data, context }): Promise<{ ok: true; message: string; opsText: string } | { ok: false; error: string }> => {
+    const { assertFinish } = await import("@/lib/billing/gate.server");
+    const gate = await assertFinish(context.userId, Boolean(data.spacenet));
+    if (!gate.ok) {
+      if (gate.code === "spacenet") return { ok: false, error: "Η χρήση ανοίγει από το SpaceNet, με το κουμπί A, και με Google." };
+      return { ok: false, error: `Δεν τελειώνει χωρίς πληρωμή. Η ώρα είναι ${gate.hourEur} €. Υπόλοιπο ${gate.balanceEur} €.` };
+    }
     const apiKey = process.env.XAI_API_KEY;
     if (!apiKey) {
       return { ok: false, error: "AI is not available in this environment." };

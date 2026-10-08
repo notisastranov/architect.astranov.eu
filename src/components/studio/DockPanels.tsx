@@ -251,7 +251,13 @@ export function AiPanel() {
     st.setAiBusy(true);
     try {
       const res = await askDatum({
-        data: { prompt: q, model: compactModel(st.project).slice(0, 11000), discipline: st.project.discipline, units: st.units },
+        data: {
+          prompt: q,
+          model: compactModel(st.project).slice(0, 11000),
+          discipline: st.project.discipline,
+          units: st.units,
+          spacenet: typeof localStorage !== "undefined" && localStorage.getItem("astranov-spacenet") === "1",
+        },
       });
       if (!res.ok) {
         st.pushAi("assistant", res.error);
