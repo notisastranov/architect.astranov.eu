@@ -34,10 +34,10 @@ import type {
 const MAX_HIST = 40;
 
 const DEFAULT_GLOBE: GlobeState = {
-  lat: 36.372,
-  lon: 28.198,
-  alt: 480,
-  layer: "esri-imagery",
+  lat: 36.38752,
+  lon: 28.2225,
+  alt: 280,
+  layer: "BASEMAP",
   flyNonce: 0,
 };
 
@@ -441,7 +441,7 @@ export const useCad = create<CadState>()(
       },
     }),
     {
-      name: "astranov-bimcad-v2",
+      name: "astranov-bimcad-v3",
       skipHydration: true,
       partialize: (s) => ({
         project: s.project,
