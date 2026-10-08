@@ -49,7 +49,11 @@ Allowed ops (use only these):
 - {"op":"delete","ids":["id"]}
 - {"op":"dimensionExtents"}
 - {"op":"query","kind":"area"}
-All coordinates millimetres. Prefer addRectRoom for enclosed rooms. Reuse existing wall ids when adding doors/windows. Do not invent units other than mm. Keep ops minimal and correct. If the user only asks a question, ops may be empty and message answers it using the model.`;
+- {"op":"board","id":"forensic|topo|architect|mechanic|designer|images|videos","on":true}
+- {"op":"boards","on":true}
+- {"op":"weight","value":2}
+- {"op":"video","prompt":"what the next film should show"}
+The user is talking to the designer. Change the drawing, the views, the line weight, or ask for another video. If they only ask a question, ops may be empty and message answers it. Coordinates millimetres. Prefer addRectRoom for enclosed rooms. Reuse existing wall ids when adding doors/windows. Keep ops minimal and correct.`;
 
     const res = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",

@@ -4,6 +4,7 @@ import { useCad } from "@/lib/cad/store";
 import { parseLength } from "@/lib/cad/units";
 import { runProjectFilm } from "@/lib/cad/film";
 import { SITE_PROPOSE_PROMPT } from "@/lib/cad/propose-site";
+import { talk } from "./ai-talk";
 import { commitPolyline, tryCommandPoint } from "./Viewport2D";
 
 export function CommandBar() {
@@ -94,15 +95,15 @@ export function CommandBar() {
         const mag = Math.hypot(dx, dy) || 1;
         tryCommandPoint(`@${(len * dx) / mag / (st.units === "m" ? 1000 : st.units === "cm" ? 10 : 1)},${(len * dy) / mag / (st.units === "m" ? 1000 : st.units === "cm" ? 10 : 1)}`);
       } else {
-        st.setStatus(`Unknown command: ${t}`);
+        void talk(t);
       }
     }
     setCommand("");
   };
 
   return (
-    <div className="flex h-[var(--height-cmd)] shrink-0 items-center gap-3 border-t border-border bg-surface px-3">
-      <span className="hidden font-mono text-[10px] tracking-widest text-subtle uppercase sm:block">Command</span>
+    <div className="flex h-12 shrink-0 items-center gap-2 border-t border-border bg-surface px-2">
+      <span className="shrink-0 font-mono text-[10px] tracking-widest text-subtle">AI</span>
       <input
         ref={inputRef}
         value={command}
@@ -113,9 +114,9 @@ export function CommandBar() {
             run(command);
           }
         }}
-        placeholder={status}
-        className="h-8 min-w-0 flex-1 truncate bg-transparent font-mono text-xs text-fg placeholder:text-subtle outline-none"
-        aria-label="Command line"
+        placeholder={status || "Πες τι να αλλάξει. Σχέδιο, όψη, βίντεο."}
+        className="h-9 min-w-0 flex-1 rounded-sm bg-elevated px-2 text-sm text-fg placeholder:text-subtle outline-none"
+        aria-label="AI command"
       />
     </div>
   );

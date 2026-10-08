@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
 import { Eye, EyeOff, Lock, LockOpen, Sparkles } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCad } from "@/lib/cad/store";
-import { askDatum } from "@/lib/cad/ask-datum";
-import { compactModel, inverse, quantities } from "@/lib/cad/quantities";
+import { talk } from "./ai-talk";
+import { inverse, quantities } from "@/lib/cad/quantities";
 import { formatArea, formatMm, formatMmNum } from "@/lib/cad/units";
 import { azimuthDeg, dist, formatDms, polygonArea, wallLength } from "@/lib/cad/geometry";
-import type { AiOp, Entity, SurveyEnt, UnitSystem } from "@/lib/cad/types";
+import type { Entity, SurveyEnt, UnitSystem } from "@/lib/cad/types";
 import { MATERIALS } from "@/lib/cad/types";
 
 export function Properties() {
@@ -245,42 +244,8 @@ export function AiPanel() {
   const send = async (text?: string) => {
     const q = (text ?? prompt).trim();
     if (!q || busy) return;
-    const st = useCad.getState();
-    st.setPrompt("");
-    st.pushAi("user", q);
-    st.setAiBusy(true);
-    try {
-      const res = await askDatum({
-        data: {
-          prompt: q,
-          model: compactModel(st.project).slice(0, 11000),
-          discipline: st.project.discipline,
-          units: st.units,
-          spacenet: typeof localStorage !== "undefined" && localStorage.getItem("astranov-spacenet") === "1",
-        },
-      });
-      if (!res.ok) {
-        st.pushAi("assistant", res.error);
-        toast.error(res.error);
-      } else {
-        let ops: AiOp[] = [];
-        try {
-          const parsed = JSON.parse(res.opsText) as unknown;
-          if (Array.isArray(parsed)) ops = parsed as AiOp[];
-        } catch {
-          ops = [];
-        }
-        if (ops.length) st.applyAi(ops);
-        st.pushAi("assistant", res.message);
-        toast.success(res.message);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Request failed";
-      st.pushAi("assistant", msg);
-      toast.error(msg);
-    } finally {
-      useCad.getState().setAiBusy(false);
-    }
+    useCad.getState().setPrompt("");
+    await talk(q);
   };
 
   return (

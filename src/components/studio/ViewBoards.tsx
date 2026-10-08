@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { BOARD_IDS, type BoardId, useCad } from "@/lib/cad/store";
 import { Viewport2D } from "./Viewport2D";
 import { Viewport3D } from "./Viewport3D";
 import { VaultAudit } from "./VaultAudit";
+import { talk } from "./ai-talk";
 
 const LABEL: Record<BoardId, string> = {
   forensic: "Forensic",
@@ -52,8 +54,11 @@ export function BoardStage() {
   const on = BOARD_IDS.filter((id) => boards[id]);
   if (!on.length) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted">
-        Turn a view on. All shows every one together.
+      <div className="flex h-full flex-col">
+        <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted">
+          Turn a view on. All shows every one together.
+        </div>
+        <AiLine scope="architect" />
       </div>
     );
   }
@@ -65,14 +70,44 @@ export function BoardStage() {
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}
     >
       {on.map((id) => (
-        <section key={id} className="relative min-h-0 min-w-0 overflow-hidden bg-bg">
+        <section key={id} className="relative flex min-h-0 min-w-0 flex-col overflow-hidden bg-bg">
           <span className="pointer-events-none absolute top-1 left-1 z-10 rounded-sm bg-bg/80 px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-fg">
             {LABEL[id]}
           </span>
-          <Tile id={id} architectOn={boards.architect} images={images} videos={videos} />
+          <div className="min-h-0 flex-1">
+            <Tile id={id} architectOn={boards.architect} images={images} videos={videos} />
+          </div>
+          <AiLine scope={id} />
         </section>
       ))}
     </div>
+  );
+}
+
+function AiLine({ scope }: { scope: BoardId }) {
+  const [text, setText] = useState("");
+  const busy = useCad((s) => s.aiBusy);
+  return (
+    <form
+      className="flex shrink-0 items-center gap-1 border-t border-border bg-surface px-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const q = text;
+        setText("");
+        void talk(q, LABEL[scope]);
+      }}
+    >
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="AI"
+        aria-label={`AI ${LABEL[scope]}`}
+        className="h-8 min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-subtle"
+      />
+      <button type="submit" disabled={busy || !text.trim()} className="h-7 shrink-0 rounded-sm px-1.5 font-mono text-[10px] text-muted disabled:opacity-40">
+        AI
+      </button>
+    </form>
   );
 }
 
