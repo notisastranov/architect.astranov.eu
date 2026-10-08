@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { cloneProject, nid, projectExtents } from "./geometry";
 import { applyOps, type ApplyResult } from "./ops";
-import { blankProject, sampleArchitecture } from "./samples";
+import { blankProject } from "./samples";
+import { sampleOliveTreehouse } from "./olive-house";
 import {
   applyPrintedScale,
   assembleCollage,
@@ -33,10 +34,10 @@ import type {
 const MAX_HIST = 40;
 
 const DEFAULT_GLOBE: GlobeState = {
-  lat: 36.434,
-  lon: 28.217,
-  alt: 215,
-  layer: "BASEMAP",
+  lat: 36.372,
+  lon: 28.198,
+  alt: 480,
+  layer: "esri-imagery",
   flyNonce: 0,
 };
 
@@ -132,7 +133,7 @@ function pushHist(s: CadState, next: Project): Pick<CadState, "project" | "past"
 export const useCad = create<CadState>()(
   persist(
     (set, get) => ({
-      project: sampleArchitecture(),
+      project: sampleOliveTreehouse(),
       past: [],
       future: [],
       selection: [],
@@ -141,9 +142,9 @@ export const useCad = create<CadState>()(
       snap: { grid: true, end: true, mid: true, center: true, int: true },
       ortho: true,
       units: "m",
-      view: "globe",
+      view: "plan",
       globe: { ...DEFAULT_GLOBE },
-      cam: { x: 6000, y: 3500, zoom: 0.06 },
+      cam: { x: 0, y: -1500, zoom: 0.028 },
       hover: null,
       snapHit: null,
       command: "",
@@ -440,7 +441,7 @@ export const useCad = create<CadState>()(
       },
     }),
     {
-      name: "astranov-bimcad-v1",
+      name: "astranov-bimcad-v2",
       skipHydration: true,
       partialize: (s) => ({
         project: s.project,

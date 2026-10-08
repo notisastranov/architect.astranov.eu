@@ -16,21 +16,21 @@ export interface ArchitecturalDeclaration {
 }
 
 export const DEFAULT_SITE: SiteContext = {
-  name: "Rose Stone Villa",
-  municipality: "Rhodes / Ρόδος",
-  plot: "Own property on the live Hellenic Cadastre sheet",
-  lat: 36.434,
-  lon: 28.217,
-  cadastre: "Ελληνικό Κτηματολόγιο BASEMAP · IGM Carta dell'isola di Rodi 1922/35",
+  name: "Δεντρόσπιτο Μαρμαράδες",
+  municipality: "Κοσκινού · Δ.Ε. Καλλιθέας · Ρόδος",
+  plot: "Κέντρο χωραφιού, ελαιώνας Μαρμαράδων. Η αρχή του σχεδίου είναι το κέντρο του σπιτιού.",
+  lat: 36.372,
+  lon: 28.198,
+  cadastre: "Ελληνικό Κτηματολόγιο BASEMAP · αεροφωτογραφία. Το φύλλο που θα μπει κλειδώνει το ίδιο κέντρο.",
 };
 
 export const DEFAULT_DECLARATION: ArchitecturalDeclaration = {
   title: "Architectural declaration · Δήλωση αρχιτέκτονα",
   author: "Astranov Architect",
   client: "Owner",
-  program: "Residence and landscape on the registered plot",
+  program: "Μεγάλο δεντρόσπιτο 18 × 12 m στο κέντρο του ελαιώνα",
   statement:
-    "The proposal sits on the real topographic diagram of the area — Hellenic Cadastre orthophoto and, where they survive, the Italian IGM sheets of Rhodes. Development and building are drawn in millimetres on that ground. The owner may edit the BIM; the film begins from the whole map and focuses down to the finished work.",
+    "Δώδεκα κορμοί ελιάς μένουν ζωντανοί και γίνονται κολόνες. Η κάθαρση από το έδαφος είναι 2,00 m και εκεί τελειώνει η κολόνα: η εξάμετρη δοκός κάθεται κατευθείαν στον κορμό. Το ταβανοδάπεδο είναι ραμποτέ 20 × 200 mm. Αντί τοιχοποιίας, πλέξιγκλας και ασημί ανακλαστική κουρτίνα. Στο δάπεδο-ταβάνι: τζακούζι, ηλιακός, φωτοβολταϊκά. Όταν μπει το τοπογραφικό με τις αεροφωτογραφίες, το ίδιο περίγραμμα δένει στο κέντρο του χωραφιού.",
 };
 
 export function siteLine(site: SiteContext) {

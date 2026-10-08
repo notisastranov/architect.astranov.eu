@@ -54,6 +54,8 @@ export interface WallEnt extends BaseEnt {
   b: Pt;
   thickness: number;
   height: number;
+  /** Height of the wall base above the ground, millimetres. Screens sit on the deck. */
+  base?: number;
   material: string;
   ifc: string;
 }

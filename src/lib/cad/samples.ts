@@ -1,4 +1,5 @@
 import { defaultLayers, nid } from "./geometry";
+import { sampleOliveTreehouse } from "./olive-house";
 import type { Entity, Project } from "./types";
 
 function wallsRect(
@@ -563,6 +564,14 @@ export function blankProject(discipline: Project["discipline"]): Project {
 }
 
 export const SAMPLE_CATALOG = [
+  {
+    id: "olive",
+    title: "Δεντρόσπιτο Μαρμαράδες",
+    discipline: "architecture" as const,
+    spec: "18 × 12 m  ·  12 ελιές  ·  δοκοί 6 m",
+    blurb: "First floor on the olive trunks, rabote deck, plexiglass and silver curtains.",
+    load: sampleOliveTreehouse,
+  },
   {
     id: "architecture",
     title: "Court House",

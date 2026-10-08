@@ -8,6 +8,21 @@ import type { CircleEnt, Entity, OpeningEnt, Project, RectEnt, SurveyEnt, WallEn
 
 const M = 0.001;
 
+function shade(material: string | undefined, selected: boolean) {
+  if (selected) return { color: "#f2f4f0", roughness: 0.4, metalness: 0, transparent: false, opacity: 1 };
+  const m = (material ?? "").toLowerCase();
+  if (m.includes("olive")) return { color: "#6b5140", roughness: 0.92, metalness: 0, transparent: false, opacity: 1 };
+  if (m.includes("plex")) return { color: "#d5e6ee", roughness: 0.08, metalness: 0.04, transparent: true, opacity: 0.38 };
+  if (m.includes("silver") || m.includes("curtain")) return { color: "#e4e7ea", roughness: 0.22, metalness: 0.78, transparent: false, opacity: 1 };
+  if (m.includes("jacuzzi")) return { color: "#1c6d82", roughness: 0.16, metalness: 0.1, transparent: false, opacity: 1 };
+  if (m.includes("solar")) return { color: "#1c1c1c", roughness: 0.4, metalness: 0.35, transparent: false, opacity: 1 };
+  if (m.includes("pv")) return { color: "#17325c", roughness: 0.22, metalness: 0.5, transparent: false, opacity: 1 };
+  if (m.includes("rabote") || m.includes("deck")) return { color: "#e6d2ad", roughness: 0.88, metalness: 0, transparent: false, opacity: 1 };
+  if (m.includes("joist")) return { color: "#c9a36a", roughness: 0.76, metalness: 0, transparent: false, opacity: 1 };
+  if (m.includes("beam") || m.includes("girder") || m.includes("pine")) return { color: "#b78345", roughness: 0.72, metalness: 0, transparent: false, opacity: 1 };
+  return { color: "#c2b8a8", roughness: 0.78, metalness: 0.04, transparent: false, opacity: 1 };
+}
+
 export function Viewport3D() {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
@@ -116,7 +131,7 @@ function BimModel({ project, selection }: { project: Project; selection: string[
         c.kind === "column" ? (
           <mesh key={c.id} position={[c.c.x * M, (c.height * M) / 2, c.c.y * M]}>
             <boxGeometry args={[c.width * M, c.height * M, c.depth * M]} />
-            <meshStandardMaterial color={sel.has(c.id) ? "#f2f4f0" : "#9aa49c"} roughness={0.65} />
+            <meshStandardMaterial {...shade(c.material, sel.has(c.id))} />
           </mesh>
         ) : null,
       )}
@@ -149,7 +164,8 @@ function WallMesh({
   const dirx = (wall.b.x - wall.a.x) / (len || 1);
   const diry = (wall.b.y - wall.a.y) / (len || 1);
   const yaw = Math.atan2(dirx, diry);
-  const color = selected ? "#f2f4f0" : wall.material === "Gypsum" ? "#c8cbc4" : "#c2b8a8";
+  const color = shade(wall.material, selected);
+  const base = wall.base ?? 0;
 
   return (
     <group>
@@ -157,11 +173,11 @@ function WallMesh({
         const mid = lerp(wall.a, wall.b, (p.t0 + p.t1) / 2);
         const w = Math.max((p.t1 - p.t0) * len * M, 0.02);
         const height = Math.max(p.height * M, 0.05);
-        const y = p.sill * M + height / 2;
+        const y = (base + p.sill) * M + height / 2;
         return (
           <mesh key={i} position={[mid.x * M, y, mid.y * M]} rotation={[0, yaw, 0]}>
-            <boxGeometry args={[Math.max(wall.thickness * M, 0.08), height, w]} />
-            <meshStandardMaterial color={color} roughness={0.78} metalness={0.04} />
+            <boxGeometry args={[Math.max(wall.thickness * M, 0.02), height, w]} />
+            <meshStandardMaterial {...color} />
           </mesh>
         );
       })}
@@ -251,7 +267,7 @@ function SlabMesh({ e, selected }: { e: Extract<Entity, { kind: "slab" }>; selec
 
   return (
     <mesh geometry={geom} receiveShadow>
-      <meshStandardMaterial color={selected ? "#e8ece6" : "#5f6660"} roughness={0.92} />
+      <meshStandardMaterial {...shade(e.material, selected)} />
     </mesh>
   );
 }
