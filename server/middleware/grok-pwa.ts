@@ -71,7 +71,12 @@ export default async function grokPwaMiddleware(
   const urlWithQuery = path + event.url.search;
 
   if (path === "/__grok/manifest.webmanifest" || path === "/__grok/manifest.json") {
-    return new Response(renderWebManifest(requestHost(event)), {
+    const fromSite = String(grokOgIdentity.site?.title ?? "").trim();
+    const body = renderWebManifest(requestHost(event));
+    const named = fromSite
+      ? body.replace(/"name": "[^"]*"\s*,\s*"short_name": "[^"]*"/, `"name": ${JSON.stringify(fromSite)}, "short_name": ${JSON.stringify(fromSite)}`)
+      : body;
+    return new Response(named, {
       headers: {
         "content-type": "application/manifest+json; charset=utf-8",
         "cache-control": "no-cache",

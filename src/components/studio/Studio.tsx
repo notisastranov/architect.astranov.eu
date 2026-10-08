@@ -215,7 +215,7 @@ function TopBar({ onMobileDock, onPoster }: { onMobileDock: () => void; onPoster
         <BrandMark className="size-5 text-primary" />
         <span className="flex min-w-0 flex-col leading-none">
           <span className="text-[9px] font-medium tracking-[0.18em] text-muted">ASTRANOV</span>
-          <span className="mt-0.5 text-sm font-semibold tracking-tight">Forensic TopoBimCad</span>
+          <span className="mt-0.5 truncate text-sm font-semibold tracking-tight">Astranov Architect Forensic TopoBimCad</span>
         </span>
       </button>
       <span className="hidden h-4 w-px bg-border sm:block" />

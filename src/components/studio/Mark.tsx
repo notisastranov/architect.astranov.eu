@@ -8,5 +8,5 @@ export function BrandMark({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-export const PRODUCT_NAME = "Forensic TopoBimCad";
+export const PRODUCT_NAME = "Astranov Architect Forensic TopoBimCad";
 export const PRODUCT_MARK = "ASTRANOV";
