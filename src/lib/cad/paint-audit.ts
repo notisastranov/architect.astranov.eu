@@ -38,7 +38,7 @@ function cornerMark(
   ctx.beginPath();
   ctx.arc(vx, vy, radius, armA, armA + sw.delta, sw.anti);
   ctx.stroke();
-  const inset = Math.max(11, radius * 0.62);
+  const inset = Math.max(6, radius * 0.55);
   const lx = vx + Math.cos(mid) * inset;
   const ly = vy + Math.sin(mid) * inset;
   const label = `${degrees.toFixed(1)}°`;
@@ -106,36 +106,41 @@ export function paintSheetAudit(
         ctx.lineTo(b.x, b.y);
         ctx.stroke();
       }
-      const mx = (a.x + b.x) / 2;
-      const my = (a.y + b.y) / 2;
-      let nx = b.y - a.y;
-      let ny = a.x - b.x;
-      const nl = Math.hypot(nx, ny) || 1;
-      nx /= nl;
-      ny /= nl;
-      if ((mx + nx - cx) * (mx - cx) + (my + ny - cy) * (my - cy) < (mx - cx) * (mx - cx) + (my - cy) * (my - cy)) {
-        nx = -nx;
-        ny = -ny;
+      const edgeLen = Math.hypot(b.x - a.x, b.y - a.y);
+      if (edgeLen >= 42) {
+        const mx = (a.x + b.x) / 2;
+        const my = (a.y + b.y) / 2;
+        let nx = b.y - a.y;
+        let ny = a.x - b.x;
+        const nl = Math.hypot(nx, ny) || 1;
+        nx /= nl;
+        ny /= nl;
+        if ((mx + nx - cx) * (mx - cx) + (my + ny - cy) * (my - cy) < (mx - cx) * (mx - cx) + (my - cy) * (my - cy)) {
+          nx = -nx;
+          ny = -ny;
+        }
+        const off = 10 + weight;
+        const label = shift ? `${edge.metres.toFixed(2)} m  SHIFT` : `${edge.metres.toFixed(2)} m`;
+        ctx.font = `500 ${Math.round(8 + weight)}px 'IBM Plex Mono', monospace`;
+        const tw = ctx.measureText(label).width;
+        const lx = mx + nx * off;
+        const ly = my + ny * off;
+        ctx.fillStyle = "rgba(12,13,14,0.82)";
+        ctx.fillRect(lx - tw / 2 - 3, ly - 9, tw + 6, 13);
+        ctx.fillStyle = shift ? "#e07a5f" : pal.fg;
+        ctx.textAlign = "center";
+        ctx.fillText(label, lx, ly + 1);
+        ctx.textAlign = "left";
       }
-      const off = 14 + weight * 4;
-      const label = shift ? `${edge.metres.toFixed(2)} m  SHIFT` : `${edge.metres.toFixed(2)} m`;
-      ctx.font = `500 ${Math.round(8 + weight * 1.4)}px 'IBM Plex Mono', monospace`;
-      const tw = ctx.measureText(label).width;
-      const lx = mx + nx * off;
-      const ly = my + ny * off;
-      ctx.fillStyle = "rgba(12,13,14,0.82)";
-      ctx.fillRect(lx - tw / 2 - 3, ly - 9, tw + 6, 13);
-      ctx.fillStyle = shift ? "#e07a5f" : pal.fg;
-      ctx.textAlign = "center";
-      ctx.fillText(label, lx, ly + 1);
-      ctx.textAlign = "left";
 
       const armBack = Math.atan2(prev.y - here.y, prev.x - here.x);
       const armFore = Math.atan2(b.y - here.y, b.x - here.x);
-      const insideR = 26 + weight * 7;
-      const outsideR = 48 + weight * 10;
+      const span = Math.min(Math.hypot(prev.x - here.x, prev.y - here.y), Math.hypot(b.x - here.x, b.y - here.y));
+      if (span < 36) return;
+      const insideR = Math.min(14, span * 0.16);
+      const outsideR = Math.min(9, insideR * 0.62);
       cornerMark(ctx, here.x, here.y, armBack, armFore, edge.angleDeg, insideR, weight, color, "rgba(12,13,14,0.9)");
-      cornerMark(ctx, here.x, here.y, armBack, armFore, edge.exteriorDeg, outsideR, Math.max(0.8, weight * 0.85), pal.muted, "rgba(12,13,14,0.9)");
+      cornerMark(ctx, here.x, here.y, armBack, armFore, edge.exteriorDeg, outsideR, Math.max(0.7, weight * 0.7), pal.muted, "rgba(12,13,14,0.9)");
     });
   });
 }
