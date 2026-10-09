@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { BOARD_IDS, type BoardId, useCad } from "@/lib/cad/store";
 import { Viewport2D } from "./Viewport2D";
@@ -16,11 +16,25 @@ const LABEL: Record<BoardId, string> = {
   videos: "AI videos",
 };
 
+const MOBILE_LEAD: BoardId[] = ["images", "videos", "designer", "architect", "forensic", "topo", "mechanic"];
+
+function usePhone() {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const q = window.matchMedia("(max-width: 767px)");
+    const apply = () => setPhone(q.matches);
+    apply();
+    q.addEventListener("change", apply);
+    return () => q.removeEventListener("change", apply);
+  }, []);
+  return phone;
+}
+
 export function ViewBoardBar() {
   const boards = useCad((s) => s.boards);
   const allOn = BOARD_IDS.every((id) => boards[id]);
   return (
-    <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border bg-surface px-2 py-1.5">
+    <div className="order-3 flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border bg-surface px-2 py-1.5 md:order-2">
       <button
         type="button"
         aria-pressed={allOn}
@@ -51,7 +65,9 @@ export function BoardStage() {
   const boards = useCad((s) => s.boards);
   const images = useCad((s) => s.aiImages);
   const videos = useCad((s) => s.aiVideos);
-  const on = BOARD_IDS.filter((id) => boards[id]);
+  const phone = usePhone();
+  const order = phone ? MOBILE_LEAD : BOARD_IDS;
+  const on = order.filter((id) => boards[id]);
   if (!on.length) {
     return (
       <div className="flex h-full flex-col">
@@ -137,7 +153,7 @@ function Tile({ id, architectOn, images, videos }: { id: BoardId; architectOn: b
     return (
       <div className="flex h-full flex-col pt-6">
         <img src="/marmarades/house.jpg" alt="Σχέδιο δεντρόσπιτου" className="min-h-0 flex-1 object-contain" />
-        <p className="shrink-0 px-2 py-1 text-[11px] text-muted">Ελιές ως κολώνες, δοκάρια 6 m, ραμποτέ, plexiglass, τζακούζι και πάνελ στη στέγη.</p>
+        <p className="shrink-0 px-2 py-1 text-[11px] text-muted">Κανονικό πεντάγωνο, πλευρά 12 m. Ελιές στις κορυφές, δοκάρια 6 m, ραμποτέ, plexiglass, τζακούζι και πάνελ.</p>
       </div>
     );
   }

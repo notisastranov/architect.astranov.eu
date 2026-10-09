@@ -34,7 +34,7 @@ export function YearTimeline() {
   }, [playing]);
 
   return (
-    <div className="shrink-0 border-b border-border bg-surface px-2 py-2 sm:px-3">
+    <div className="order-2 shrink-0 border-b border-border bg-surface px-2 py-2 sm:px-3 md:order-1">
       <div className="flex items-center gap-2">
         <span className="shrink-0 font-mono text-[10px] tracking-[0.16em] text-subtle">FORENSIC</span>
         {(["topo", "vault", "measure"] as const).map((id) => (

@@ -9,10 +9,10 @@ import { raiseFilm, raiseFilmStatus } from "@/lib/billing/api";
 type Sheet = "topo" | "photo" | "film" | "wide";
 
 const PIECES: { id: Sheet; label: string; kind: "img" | "video"; src: string; alt: string }[] = [
-  { id: "topo", label: "Τοπογραφικό", kind: "img", src: "/marmarades/topo.jpg", alt: "Τοπογραφικό διάγραμμα Κ.Μ. 257 Γαιών Κοσκινού, 10 Απριλίου 2024" },
   { id: "photo", label: "Απεικόνιση", kind: "img", src: "/marmarades/house.jpg", alt: "Τελειωμένο δεντρόσπιτο στον ελαιώνα" },
   { id: "film", label: "Βίντεο", kind: "video", src: "/marmarades/film.mp4", alt: "Παρουσίαση από την αεροφωτογραφία στο κέντρο του χωραφιού" },
   { id: "wide", label: "Βίντεο 2", kind: "video", src: "/marmarades/film-wide.mp4", alt: "Παρουσίαση του τελειωμένου δεντρόσπιτου" },
+  { id: "topo", label: "Τοπογραφικό", kind: "img", src: "/marmarades/topo.jpg", alt: "Τοπογραφικό διάγραμμα Κ.Μ. 257 Γαιών Κοσκινού, 10 Απριλίου 2024" },
 ];
 
 function PinchImage({ src, alt }: { src: string; alt: string }) {
@@ -135,7 +135,7 @@ export function FieldDossier() {
 
   return (
     <>
-      <div className="flex h-[104px] shrink-0 items-stretch gap-2 overflow-x-auto border-b border-border bg-surface px-2 py-1.5">
+      <div className="order-1 flex h-[104px] shrink-0 items-stretch gap-2 overflow-x-auto border-b border-border bg-surface px-2 py-1.5 md:order-4">
         <button
           type="button"
           onClick={() => {
@@ -172,7 +172,7 @@ export function FieldDossier() {
         ))}
       </div>
       <form
-        className="flex shrink-0 items-center gap-2 border-b border-border bg-surface px-2 py-1.5"
+        className="order-1 flex shrink-0 items-center gap-2 border-b border-border bg-surface px-2 py-1.5 md:order-4"
         onSubmit={(e) => {
           e.preventDefault();
           void another();

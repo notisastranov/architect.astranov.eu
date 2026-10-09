@@ -1,10 +1,20 @@
 import { defaultLayers } from "./geometry";
 import type { Entity, Project, Pt } from "./types";
 
-/** Centre-to-centre bay. Stock beam, no splice. */
-const BAY = 6000;
-const XS = [-9000, -3000, 3000, 9000];
-const YS = [-6000, 0, 6000];
+/** Regular pentagon. Each side is two stock 6 m beams, trunk at the vertex and at the midpoint. */
+const SIDE = 12000;
+const R = SIDE / (2 * Math.sin(Math.PI / 5));
+
+function pentagon(radius: number): Pt[] {
+  return Array.from({ length: 5 }, (_, k) => {
+    const t = Math.PI / 2 + (k * 2 * Math.PI) / 5;
+    return { x: radius * Math.cos(t), y: radius * Math.sin(t) };
+  });
+}
+
+function midway(a: Pt, b: Pt): Pt {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
 
 /**
  * Clear soffit of the olive beams. The deck lands on the trunks.
@@ -12,8 +22,6 @@ const YS = [-6000, 0, 6000];
  */
 const SOFFIT = 2000;
 const OLIVE_D = 420;
-const GIRDER_D = 360;
-const JOIST_D = 100;
 const DECK_TOP = SOFFIT + OLIVE_D + 20;
 
 /** Κ.Μ. 257 Γαιών Κοσκινού, κορυφές 1–19, ΕΓΣΑ ’87. X ανατολή, Y βορράς. */
@@ -45,20 +53,7 @@ function fieldPt(e: number, n: number): Pt {
   return { x: (e - C_E) * 1000, y: (n - C_N) * 1000 };
 }
 
-const TRUNKS: [number, number, number][] = [
-  [-9000, -6000, 520],
-  [-3000, -6000, 440],
-  [3000, -6000, 610],
-  [9000, -6000, 480],
-  [-9000, 0, 560],
-  [-3000, 0, 420],
-  [3000, 0, 500],
-  [9000, 0, 450],
-  [-9000, 6000, 490],
-  [-3000, 6000, 580],
-  [3000, 6000, 430],
-  [9000, 6000, 540],
-];
+const TRUNK_DIA = [560, 480, 620, 450, 540, 500, 430, 580, 470, 510];
 
 function beam(
   id: string,
@@ -119,54 +114,53 @@ export function sampleOliveTreehouse(): Project {
     });
   });
 
-  TRUNKS.forEach(([x, y, dia], i) => {
+  const verts = pentagon(R);
+  const mids = verts.map((v, i) => midway(v, verts[(i + 1) % 5]!));
+  const trunks = [...verts, ...mids];
+  trunks.forEach((p, i) => {
     const n = i + 1;
+    const dia = TRUNK_DIA[i] ?? 500;
     push({
       id: `elia-${n}`,
       kind: "column",
       layerId: "cols",
       name: `Ελιά ${n}`,
-      c: { x, y },
+      c: p,
       width: dia,
       depth: dia,
       height: SOFFIT,
       rotation: 0,
       material: "Olive trunk",
     });
-    push({ id: `elia-ring-${n}`, kind: "circle", layerId: "cols", c: { x, y }, r: dia / 2 });
+    push({ id: `elia-ring-${n}`, kind: "circle", layerId: "cols", c: p, r: dia / 2 });
     push({
       id: `elia-stn-${n}`,
       kind: "survey",
       layerId: "site",
       name: `E${n}`,
-      e: x,
-      n: y,
+      e: p.x,
+      n: p.y,
       z: 0,
       code: `E${n}`,
-      desc: `Κορμός ελιάς Ø ${dia} mm · κολόνα`,
+      desc: `Κορμός ελιάς Ø ${dia} mm · κορυφή πενταγώνου`,
     });
   });
 
-  for (const y of YS) {
-    for (let i = 0; i < XS.length - 1; i++) {
-      push(beam(`bx-${y}-${i}`, XS[i]!, y, XS[i + 1]!, y, 220, OLIVE_D, SOFFIT + OLIVE_D, "Pine beam 6m"));
-    }
-  }
-  for (const x of XS) {
-    for (let i = 0; i < YS.length - 1; i++) {
-      push(beam(`by-${x}-${i}`, x, YS[i]!, x, YS[i + 1]!, 220, OLIVE_D, SOFFIT + OLIVE_D, "Pine beam 6m"));
-    }
-  }
-  for (const y of [-4000, -2000, 2000, 4000]) {
-    for (let i = 0; i < XS.length - 1; i++) {
-      push(beam(`gx-${y}-${i}`, XS[i]!, y, XS[i + 1]!, y, 140, GIRDER_D, SOFFIT + OLIVE_D, "Pine girder 6m"));
-    }
-  }
+  verts.forEach((v, i) => {
+    const n = verts[(i + 1) % 5]!;
+    const m = mids[i]!;
+    push(beam(`side-a-${i}`, v.x, v.y, m.x, m.y, 220, OLIVE_D, SOFFIT + OLIVE_D, "Pine beam 6m"));
+    push(beam(`side-b-${i}`, m.x, m.y, n.x, n.y, 220, OLIVE_D, SOFFIT + OLIVE_D, "Pine beam 6m"));
+  });
 
-  for (let x = -9000; x <= -3000; x += 400) {
-    push(beam(`joist-${x}`, x, -6000, x, -4000, 50, JOIST_D, SOFFIT + OLIVE_D, "Pine joist"));
-  }
-
+  push({
+    id: "penta",
+    kind: "polyline",
+    layerId: "walls",
+    name: "Κανονικό πεντάγωνο",
+    closed: true,
+    points: verts,
+  });
   push({
     id: "deck",
     kind: "slab",
@@ -175,14 +169,10 @@ export function sampleOliveTreehouse(): Project {
     material: "Rabote deck",
     thickness: 20,
     elevation: DECK_TOP,
-    points: [
-      { x: -9000, y: -6000 },
-      { x: 9000, y: -6000 },
-      { x: 9000, y: 6000 },
-      { x: -9000, y: 6000 },
-    ],
+    points: verts,
   });
 
+  const north = verts[0]!;
   push({
     id: "jacuzzi",
     kind: "slab",
@@ -192,12 +182,13 @@ export function sampleOliveTreehouse(): Project {
     thickness: 750,
     elevation: DECK_TOP + 750,
     points: [
-      { x: 6200, y: 3200 },
-      { x: 8400, y: 3200 },
-      { x: 8400, y: 5400 },
-      { x: 6200, y: 5400 },
+      { x: north.x - 1100, y: north.y - 3600 },
+      { x: north.x + 1100, y: north.y - 3600 },
+      { x: north.x + 1100, y: north.y - 1400 },
+      { x: north.x - 1100, y: north.y - 1400 },
     ],
   });
+  const southMid = mids.reduce((a, b) => (a.y < b.y ? a : b));
   push({
     id: "solar",
     kind: "slab",
@@ -207,14 +198,14 @@ export function sampleOliveTreehouse(): Project {
     thickness: 110,
     elevation: DECK_TOP + 110,
     points: [
-      { x: -800, y: -5400 },
-      { x: 1400, y: -5400 },
-      { x: 1400, y: -4000 },
-      { x: -800, y: -4000 },
+      { x: southMid.x - 1100, y: southMid.y + 400 },
+      { x: southMid.x + 1100, y: southMid.y + 400 },
+      { x: southMid.x + 1100, y: southMid.y + 1800 },
+      { x: southMid.x - 1100, y: southMid.y + 1800 },
     ],
   });
-  for (let i = 0; i < 4; i++) {
-    const x0 = -8600 + i * 1900;
+  for (let i = 0; i < 3; i++) {
+    const x0 = southMid.x - 2800 + i * 1900;
     push({
       id: `pv-${i + 1}`,
       kind: "slab",
@@ -224,10 +215,10 @@ export function sampleOliveTreehouse(): Project {
       thickness: 40,
       elevation: DECK_TOP + 80,
       points: [
-        { x: x0, y: -5300 },
-        { x: x0 + 1720, y: -5300 },
-        { x: x0 + 1720, y: -4160 },
-        { x: x0, y: -4160 },
+        { x: x0, y: southMid.y + 1900 },
+        { x: x0 + 1720, y: southMid.y + 1900 },
+        { x: x0 + 1720, y: southMid.y + 3040 },
+        { x: x0, y: southMid.y + 3040 },
       ],
     });
   }
@@ -246,73 +237,56 @@ export function sampleOliveTreehouse(): Project {
       material: "Plexiglass",
       ifc: "IfcPlate",
     });
-  glass("gl-s1", { x: -9000, y: -6000 }, { x: -700, y: -6000 });
-  glass("gl-s2", { x: 700, y: -6000 }, { x: 9000, y: -6000 });
-  glass("gl-n", { x: 9000, y: 6000 }, { x: -9000, y: 6000 });
-  glass("gl-w", { x: -9000, y: 6000 }, { x: -9000, y: -6000 });
-  glass("gl-e", { x: 9000, y: -6000 }, { x: 9000, y: 6000 });
+  verts.forEach((v, i) => {
+    const n = verts[(i + 1) % 5]!;
+    const south = mids[i]!.y === southMid.y;
+    if (!south) {
+      glass(`gl-${i}`, v, n);
+      return;
+    }
+    glass(`gl-${i}a`, v, { x: v.x + (n.x - v.x) * 0.35, y: v.y + (n.y - v.y) * 0.35 });
+    glass(`gl-${i}b`, { x: v.x + (n.x - v.x) * 0.65, y: v.y + (n.y - v.y) * 0.65 }, n);
+  });
 
-  const curtain = (id: string, a: Pt, b: Pt) =>
+  const curtainPts = pentagon(R - 200);
+  curtainPts.forEach((v, i) => {
+    const n = curtainPts[(i + 1) % 5]!;
     push({
-      id,
+      id: `cu-${i}`,
       kind: "wall",
       layerId: "walls",
-      name: id,
-      a,
-      b,
+      name: `Κουρτίνα ${i + 1}`,
+      a: v,
+      b: n,
       thickness: 8,
       height: 2030,
       base: DECK_TOP,
       material: "Silver curtain",
       ifc: "IfcCovering",
     });
-  curtain("cu-s", { x: -8700, y: -5880 }, { x: 8700, y: -5880 });
-  curtain("cu-n", { x: 8700, y: 5880 }, { x: -8700, y: 5880 });
-  curtain("cu-w", { x: -8880, y: 5700 }, { x: -8880, y: -5700 });
-  curtain("cu-e", { x: 8880, y: -5700 }, { x: 8880, y: 5700 });
+  });
 
   push({
     id: "room-live",
     kind: "room",
     layerId: "rooms",
     name: "Καθιστικό",
-    occupancy: "Living on the deck",
-    points: [
-      { x: -8600, y: 400 },
-      { x: -400, y: 400 },
-      { x: -400, y: 5600 },
-      { x: -8600, y: 5600 },
-    ],
-  });
-  push({
-    id: "room-sleep",
-    kind: "room",
-    layerId: "rooms",
-    name: "Ύπνος",
-    occupancy: "Sleeping",
-    points: [
-      { x: 400, y: 400 },
-      { x: 5600, y: 400 },
-      { x: 5600, y: 2800 },
-      { x: 400, y: 2800 },
-    ],
+    occupancy: "Living on the pentagon deck",
+    points: pentagon(R * 0.62),
   });
 
-  push({ id: "dim-len", kind: "dim", layerId: "dims", a: { x: -9000, y: -6000 }, b: { x: 9000, y: -6000 }, offset: -1600 });
-  push({ id: "dim-wid", kind: "dim", layerId: "dims", a: { x: -9000, y: -6000 }, b: { x: -9000, y: 6000 }, offset: -1600 });
-  push({ id: "dim-bay", kind: "dim", layerId: "dims", a: { x: -9000, y: -6000 }, b: { x: -3000, y: -6000 }, offset: -800 });
-  push({ id: "dim-2m", kind: "dim", layerId: "dims", a: { x: -9000, y: -6000 }, b: { x: -9000, y: -4000 }, offset: -800 });
-  push({ id: "dim-400", kind: "dim", layerId: "dims", a: { x: -9000, y: -4000 }, b: { x: -8600, y: -4000 }, offset: 350 });
+  push({ id: "dim-side", kind: "dim", layerId: "dims", a: verts[2]!, b: mids[2]!, offset: 1400 });
+  push({ id: "dim-side-2", kind: "dim", layerId: "dims", a: mids[2]!, b: verts[3]!, offset: 1400 });
 
+  const sideM = SIDE / 1000;
+  const radiusM = R / 1000;
   const lines: [number, number, number, string][] = [
-    [-8800, -8600, 240, "ΔΕΝΤΡΟΣΠΙΤΟ · Κ.Μ. 257 ΓΑΙΩΝ ΚΟΣΚΙΝΟΥ · ΚΕΝΤΡΟ"],
-    [-8800, -9100, 150, "18,00 × 12,00 m στο κέντρο του δακτυλίου 1–19. Κοντινότερο όριο 13,57 m, πλευρά 15–16."],
-    [-8800, -9550, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
-    [-8800, -9950, 140, "Τίτλος 3.910,00 m². Ο δακτύλιος των 19 κορυφών κλείνει 3.836,23 m². Δασική λωρίδα 60,66 m² στη δύση."],
-    [-8800, -10350, 140, "Κάθαρση 2,00 m. Δοκός ελιάς 220×420×6000. Ενδιάμεση 140×360×6000 ανά 2,00 m."],
-    [-8800, -10750, 140, "Δοκάρι 50×100 ανά 400 mm. Κόβεται 3 τεμάχια από κάθε εξάμετρο. Ραμποτέ 20×200, ωφέλιμο 185 mm."],
-    [-8800, -11150, 140, "Πλέξιγκλας 15 mm, φύλλο 3050×2030. Ασημί κουρτίνα από μέσα. Τζακούζι 2,20×2,20 σε διπλή δοκό."],
-    [-8800, -11550, 130, "Βέλος ραμποτέ στα 400 mm ≈ 0,1 mm. Βέλος 140×360 στα 6,00 m ≈ 14 mm (όριο L/300 = 20 mm)."],
+    [-R - 500, -R - 1800, 240, "ΔΕΝΤΡΟΣΠΙΤΟ · ΚΑΝΟΝΙΚΟ ΠΕΝΤΑΓΩΝΟ · Κ.Μ. 257"],
+    [-R - 500, -R - 2300, 150, `Πλευρά ${sideM.toFixed(2)} m = δύο δοκοί των 6,00 m. Ακτίνα ${radiusM.toFixed(2)} m. Εσωτερική γωνία 108°.`],
+    [-R - 500, -R - 2750, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
+    [-R - 500, -R - 3150, 140, "Δέκα ελιές: πέντε στις κορυφές, πέντε στη μέση κάθε πλευράς. Κάθαρση 2,00 m."],
+    [-R - 500, -R - 3550, 140, "Ραμποτέ 20×200 στο πεντάγωνο. Πλέξιγκλας στις πλευρές, ασημί κουρτίνα από μέσα."],
+    [-R - 500, -R - 3950, 140, "Τζακούζι στη βόρεια κορυφή. Ηλιακός και φωτοβολταϊκά προς το νότιο όριο."],
   ];
   lines.forEach(([x, y, size, text], i) => {
     push({ id: `note-${i}`, kind: "text", layerId: "notes", p: { x, y }, text, size, rotation: 0 });
@@ -324,11 +298,11 @@ export function sampleOliveTreehouse(): Project {
     discipline: "architecture",
     units: "m",
     description:
-      "18 × 12 m first floor on twelve olive trunks. 6 m beams, rabote 20 mm, plexiglass, silver curtains, jacuzzi, solar heater, PV. Centred on the Marmarades field.",
+      "Regular pentagon, side 12 m as two 6 m beams, on ten olive trunks at the centre of the Marmarades field. Rabote deck, plexiglass, silver curtains, jacuzzi, solar heater, PV.",
     layers: defaultLayers("architecture"),
     entities,
     wallHeight: 2030,
     wallThickness: 15,
-    gridSize: BAY / 15,
+    gridSize: 400,
   };
 }

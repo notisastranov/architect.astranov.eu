@@ -488,7 +488,7 @@ export const useCad = create<CadState>()(
       },
     }),
     {
-      name: "astranov-bimcad-v3",
+      name: "astranov-bimcad-v4",
       skipHydration: true,
       partialize: (s) => ({
         project: s.project,

@@ -115,7 +115,7 @@ export function RaisePanel() {
   };
 
   return (
-    <section className="shrink-0 border-b border-border bg-surface px-3 py-2">
+    <section className="order-5 shrink-0 border-b border-border bg-surface px-3 py-2 md:order-5">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-[10px] tracking-[0.14em] text-subtle">33 € / ΩΡΑ</span>
         {isPending ? (

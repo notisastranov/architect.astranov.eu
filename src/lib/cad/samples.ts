@@ -568,7 +568,7 @@ export const SAMPLE_CATALOG = [
     id: "olive",
     title: "Δεντρόσπιτο Μαρμαράδες",
     discipline: "architecture" as const,
-    spec: "18 × 12 m  ·  12 ελιές  ·  δοκοί 6 m",
+    spec: "Πεντάγωνο 12 m  ·  10 ελιές  ·  δοκοί 6 m",
     blurb: "First floor on the olive trunks, rabote deck, plexiglass and silver curtains.",
     load: sampleOliveTreehouse,
   },

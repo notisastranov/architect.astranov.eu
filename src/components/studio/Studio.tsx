@@ -144,7 +144,7 @@ export function Studio() {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
           <YearTimeline />
           <ViewBoardBar />
-          <div className="h-[62dvh] shrink-0">
+          <div className="order-4 h-[62dvh] shrink-0 md:order-3">
             {view === "globe" ? (
               <div className="h-full min-h-0 min-w-0">
                 <ViewportGlobe />
