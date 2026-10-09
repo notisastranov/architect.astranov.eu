@@ -1,29 +1,14 @@
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Download,
-  FileImage,
-  Globe2,
-  HelpCircle,
-  Layers,
-  Maximize2,
-  Redo2,
-  Sparkles,
-  SplitSquareHorizontal,
-  Square,
-  Undo2,
-  Upload,
-  X,
-} from "lucide-react";
+import { Download, Redo2, Undo2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCad, adoptSession } from "@/lib/cad/store";
 import { SAMPLE_CATALOG } from "@/lib/cad/samples";
-import { exportJson, exportSurveyCsv, exportSvg } from "@/lib/cad/export";
+import { exportSurveyCsv, exportSvg } from "@/lib/cad/export";
 import { BrandMark } from "./Mark";
 import { commitPolyline } from "./Viewport2D";
 import { Work } from "./Work";
-import type { Project, Tool, ViewMode } from "@/lib/cad/types";
+import type { Tool } from "@/lib/cad/types";
 
 const KEY_TOOLS: Record<string, Tool> = {
   KeyV: "select",
@@ -103,13 +88,6 @@ export function Studio() {
         st.deleteSelection();
         return;
       }
-      if (e.code === "Tab") {
-        e.preventDefault();
-        const order: ViewMode[] = ["globe", "plan", "split", "model"];
-        const i = order.indexOf(st.view);
-        st.setView(order[(i + 1) % order.length]!);
-        return;
-      }
       const tool = KEY_TOOLS[e.code];
       if (tool && !e.metaKey && !e.ctrlKey && !e.altKey) {
         st.setTool(tool);
@@ -150,45 +128,11 @@ function TopBar() {
   );
 }
 
-function ViewBtn({ id, view, setView, icon, label }: { id: ViewMode; view: ViewMode; setView: (v: ViewMode) => void; icon: React.ReactNode; label: string }) {
+function IconBtn({ children, onClick, label }: { children: React.ReactNode; onClick: () => void; label: string }) {
   return (
-    <button type="button" onClick={() => setView(id)} title={label} className={cn("hidden size-9 items-center justify-center rounded-sm sm:flex", view === id ? "bg-elevated text-fg" : "text-muted hover:text-fg")}>
-      {icon}
-    </button>
-  );
-}
-
-function IconBtn({ children, onClick, label, className }: { children: React.ReactNode; onClick: () => void; label: string; className?: string }) {
-  return (
-    <button type="button" title={label} aria-label={label} onClick={onClick} className={cn("flex size-9 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-fg", className)}>
+    <button type="button" title={label} aria-label={label} onClick={onClick} className="flex size-9 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-fg">
       {children}
     </button>
-  );
-}
-
-function ExportMenu() {
-  const project = useCad((s) => s.project);
-  const loadProject = useCad((s) => s.loadProject);
-  return (
-    <>
-      <IconBtn label="Export JSON" onClick={() => { exportJson(project); toast.success("Project JSON downloaded"); }}><Download className="size-4" /></IconBtn>
-      <label className="flex size-9 cursor-pointer items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-fg" title="Import JSON">
-        <Upload className="size-4" />
-        <input type="file" accept="application/json,.json" className="hidden" onChange={async (e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (!file) return;
-          try {
-            const data = JSON.parse(await file.text()) as Project;
-            if (!data?.entities || !data?.layers) throw new Error("Not an Astranov BIMCAD project");
-            loadProject(data);
-            toast.success("Project opened");
-          } catch {
-            toast.error("Could not read that file");
-          }
-        }} />
-      </label>
-    </>
   );
 }
 
@@ -204,7 +148,7 @@ function ProjectsOverlay({ onPoster }: { onPoster: () => void }) {
           <div>
             <div className="flex items-center gap-2 text-primary">
               <BrandMark className="size-6" />
-              <span className="text-xs font-medium tracking-[0.18em]">ASTRANOV ARCHITECT BIMCAD</span>
+              <span className="text-xs font-medium tracking-[0.18em]">ASTRANOV ARCHITECT FORENSIC TOPOBIMCAD</span>
             </div>
             <h1 className="mt-2 text-2xl font-medium tracking-tight text-balance">Open a model</h1>
             <p className="mt-1 max-w-md text-sm text-muted text-pretty">Millimetre kernel. Architecture, mechanical, survey. Snap, ortho, IFC properties, quantities, inverse.</p>
@@ -245,25 +189,21 @@ function HelpOverlay() {
       <div className="relative max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl bg-surface p-6 sm:rounded-xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <div className="font-mono text-[10px] tracking-[0.18em] text-subtle">ASTRANOV ARCHITECT BIMCAD</div>
-            <h2 className="mt-1 text-lg font-medium">Instruments</h2>
+            <div className="font-mono text-[10px] tracking-[0.18em] text-subtle">ASTRANOV ARCHITECT FORENSIC TOPOBIMCAD</div>
+            <h2 className="mt-1 text-lg font-medium">Three fields</h2>
           </div>
           <button type="button" onClick={() => useCad.getState().setHelpOpen(false)} className="size-10 text-muted"><X className="mx-auto size-4" /></button>
         </div>
         <dl className="space-y-2 font-mono text-xs">
           {[
+            ["Architect", "Photographs and a sentence. Pictures and film of the finished place."],
+            ["BIMCAD", "Select, wall, dimension, note. Undo, fit, delete."],
+            ["Topo", "Imported sheets, years, north, altitude. Old against new."],
             ["V / Esc", "Select / cancel"],
-            ["W L G C R D I", "Wall, line, plate, hole, room, door, window"],
-            ["Click + snap", "End, mid, centre, intersection, grid"],
-            ["F8", "Ortho constrain"],
-            ["Wheel / pinch", "Zoom about cursor"],
-            ["Middle / space-drag", "Pan the sheet"],
-            ["@dx,dy  @dist<angle", "Relative / polar in the command line"],
-            ["Tab", "Earth · Plan · Split · Model"],
-            ["Earth view", "Globe first · zoom Greece for Ktimatologio layers"],
-            ["Ctrl Z / Shift Z", "Undo / redo"],
-            ["Delete", "Erase selection"],
-            ["AI dock", "Natural language into millimetre geometry"],
+            ["F8", "Ortho"],
+            ["Wheel / pinch", "Zoom"],
+            ["Ctrl Z", "Undo"],
+            ["Delete", "Erase the selection"],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between gap-4 border-b border-border/60 py-1.5">
               <dt className="text-primary">{k}</dt>
@@ -284,7 +224,7 @@ function PosterOverlay({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div>
             <div className="font-mono text-[10px] tracking-[0.18em] text-subtle">A3 · POSTER-01</div>
-            <h2 className="text-base font-medium">Astranov Architect BIMCAD</h2>
+            <h2 className="text-base font-medium">Astranov Architect Forensic TopoBimCad</h2>
           </div>
           <div className="flex items-center gap-1">
             <a href="/poster.png" download="Astranov-Architect-BIMCAD-poster.png" className="flex size-10 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-fg" title="Download PNG"><Download className="size-4" /></a>
