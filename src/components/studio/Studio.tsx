@@ -21,16 +21,8 @@ import { useCad } from "@/lib/cad/store";
 import { SAMPLE_CATALOG } from "@/lib/cad/samples";
 import { exportJson, exportSurveyCsv, exportSvg } from "@/lib/cad/export";
 import { BrandMark } from "./Mark";
-import { Toolbar } from "./Toolbar";
 import { commitPolyline } from "./Viewport2D";
-import { ViewportGlobe } from "./ViewportGlobe";
-import { CommandBar } from "./CommandBar";
-import { StatusBar } from "./StatusBar";
-import { AiPanel, Dock } from "./Dock";
-import { YearTimeline } from "./YearTimeline";
-import { FieldDossier } from "./FieldDossier";
-import { RaisePanel } from "./RaisePanel";
-import { BoardStage, ViewBoardBar } from "./ViewBoards";
+import { Work } from "./Work";
 import type { Project, Tool, ViewMode } from "@/lib/cad/types";
 
 const KEY_TOOLS: Record<string, Tool> = {
@@ -51,12 +43,8 @@ const KEY_TOOLS: Record<string, Tool> = {
 };
 
 export function Studio() {
-  const view = useCad((s) => s.view);
-  const inspectOpen = useCad((s) => s.inspectOpen);
   const projectsOpen = useCad((s) => s.projectsOpen);
   const helpOpen = useCad((s) => s.helpOpen);
-  const aiOpen = useCad((s) => s.aiOpen);
-  const [mobileDock, setMobileDock] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
 
   useEffect(() => {
@@ -132,62 +120,8 @@ export function Studio() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-fg">
-      <TopBar onMobileDock={() => setMobileDock(true)} onPoster={() => setPosterOpen(true)} />
-      <div className="flex min-h-0 flex-1">
-        <div className="hidden w-12 shrink-0 border-r border-border bg-surface md:block">
-          <Toolbar orientation="vertical" />
-        </div>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="flex w-full min-w-0 shrink-0 border-b border-border md:hidden">
-            <Toolbar orientation="horizontal" />
-          </div>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
-          <YearTimeline />
-          <ViewBoardBar />
-          <div className="order-4 h-[62dvh] shrink-0 md:order-3">
-            {view === "globe" ? (
-              <div className="h-full min-h-0 min-w-0">
-                <ViewportGlobe />
-              </div>
-            ) : (
-              <div className="h-full"><BoardStage /></div>
-            )}
-          </div>
-          <FieldDossier />
-          <RaisePanel />
-          </div>
-          <CommandBar />
-          <StatusBar />
-        </div>
-        <div className="hidden w-[var(--width-dock)] shrink-0 lg:block">
-          <Dock />
-        </div>
-      </div>
-      {inspectOpen && (
-        <button type="button" onClick={() => setMobileDock(true)} className="fixed right-3 bottom-24 z-20 flex size-11 items-center justify-center rounded-md bg-elevated text-fg shadow-lg lg:hidden" aria-label="Inspect">
-          <Layers className="size-4" />
-        </button>
-      )}
-      {mobileDock && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button type="button" className="absolute inset-0 bg-bg/70" aria-label="Close" onClick={() => setMobileDock(false)} />
-          <div className="absolute inset-x-0 bottom-0 max-h-[80dvh] overflow-hidden rounded-t-xl bg-surface">
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-sm font-medium">Inspector</span>
-              <button type="button" onClick={() => setMobileDock(false)} className="size-10 text-muted">
-                <X className="mx-auto size-4" />
-              </button>
-            </div>
-            <div className="h-[70dvh]"><Dock /></div>
-          </div>
-        </div>
-      )}
-      {aiOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button type="button" className="absolute inset-0 bg-bg/70" aria-label="Close AI" onClick={() => useCad.getState().setAiOpen(false)} />
-          <div className="absolute inset-x-0 bottom-0 max-h-[80dvh] rounded-t-xl bg-surface p-3"><AiPanel /></div>
-        </div>
-      )}
+      <TopBar />
+      <Work />
       {projectsOpen && <ProjectsOverlay onPoster={() => setPosterOpen(true)} />}
       {helpOpen && <HelpOverlay />}
       {posterOpen && <PosterOverlay onClose={() => setPosterOpen(false)} />}
@@ -195,43 +129,18 @@ export function Studio() {
   );
 }
 
-function TopBar({ onMobileDock, onPoster }: { onMobileDock: () => void; onPoster: () => void }) {
-  const project = useCad((s) => s.project);
-  const view = useCad((s) => s.view);
-  const setView = useCad((s) => s.setView);
+function TopBar() {
   const undo = useCad((s) => s.undo);
   const redo = useCad((s) => s.redo);
-  const zoomExtents = useCad((s) => s.zoomExtents);
   return (
-    <header className="flex h-[var(--height-top)] min-w-0 shrink-0 items-center gap-1 overflow-hidden border-b border-border bg-surface px-2 sm:gap-2 sm:px-3">
-      <button type="button" onClick={() => useCad.getState().setProjectsOpen(true)} className="flex items-center gap-2 rounded-sm px-1.5 py-1 hover:bg-elevated">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-bg px-3">
+      <button type="button" onClick={() => useCad.getState().setProjectsOpen(true)} className="flex min-w-0 items-center gap-2">
         <BrandMark className="size-5 text-primary" />
-        <span className="flex min-w-0 flex-col leading-none">
-          <span className="text-[9px] font-medium tracking-[0.18em] text-muted">ASTRANOV</span>
-          <span className="mt-0.5 truncate text-sm font-semibold tracking-tight">Astranov Architect Forensic TopoBimCad</span>
-        </span>
+        <span className="truncate text-sm font-medium">Astranov Architect</span>
       </button>
-      <span className="hidden h-4 w-px bg-border sm:block" />
-      <span className="hidden min-w-0 truncate text-xs text-muted sm:block">{project.name}</span>
-      <span className="hidden rounded-xs bg-elevated px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-subtle uppercase md:inline">{project.discipline}</span>
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="ml-auto flex items-center">
         <IconBtn label="Undo" onClick={undo}><Undo2 className="size-4" /></IconBtn>
-        <IconBtn label="Redo" onClick={redo} className="hidden sm:flex"><Redo2 className="size-4" /></IconBtn>
-        <IconBtn label="Zoom extents" onClick={zoomExtents} className="hidden sm:flex"><Maximize2 className="size-4" /></IconBtn>
-        <div className="mx-1 hidden h-4 w-px bg-border sm:block" />
-        <button type="button" onClick={() => setView(view === "globe" ? "plan" : view === "model" ? "plan" : view === "split" ? "plan" : "globe")} className="rounded-sm px-2 py-1 font-mono text-[10px] tracking-wide text-muted uppercase hover:bg-elevated hover:text-fg sm:hidden">
-          {view === "globe" ? "Plan" : view === "model" ? "Plan" : "Earth"}
-        </button>
-        <ViewBtn id="globe" view={view} setView={setView} icon={<Globe2 className="size-3.5" />} label="Earth" />
-        <ViewBtn id="plan" view={view} setView={setView} icon={<Square className="size-3.5" />} label="Plan" />
-        <ViewBtn id="split" view={view} setView={setView} icon={<SplitSquareHorizontal className="size-3.5" />} label="Split" />
-        <ViewBtn id="model" view={view} setView={setView} icon={<Box className="size-3.5" />} label="Model" />
-        <div className="mx-1 hidden h-4 w-px bg-border sm:block" />
-        <div className="hidden sm:contents"><ExportMenu /></div>
-        <IconBtn label="Product poster" onClick={onPoster} className="hidden sm:flex"><FileImage className="size-4" /></IconBtn>
-        <IconBtn label="Inspector" onClick={onMobileDock} className="lg:hidden"><Layers className="size-4" /></IconBtn>
-        <IconBtn label="AI draughtsman" onClick={() => { useCad.getState().setAiOpen(true); useCad.getState().setRightTab("ai"); }}><Sparkles className="size-4" /></IconBtn>
-        <IconBtn label="Help" onClick={() => useCad.getState().setHelpOpen(true)}><HelpCircle className="size-4" /></IconBtn>
+        <IconBtn label="Redo" onClick={redo}><Redo2 className="size-4" /></IconBtn>
       </div>
     </header>
   );

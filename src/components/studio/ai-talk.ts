@@ -4,6 +4,7 @@ import { compactModel } from "@/lib/cad/quantities";
 import { BOARD_IDS, type BoardId, useCad } from "@/lib/cad/store";
 import type { AiOp } from "@/lib/cad/types";
 import { raiseFilm, raiseFilmStatus } from "@/lib/billing/api";
+import { installAllServices, installService, type ServiceKind } from "@/lib/cad/services";
 
 const BOARD_WORDS: { id: BoardId; words: string[] }[] = [
   { id: "forensic", words: ["forensic", "εγκληματο", "γωνι"] },
@@ -23,6 +24,16 @@ function boardFrom(text: string): BoardId | null {
 function localOrder(text: string): boolean {
   const low = text.trim().toLowerCase();
   const st = useCad.getState();
+  const kinds: ServiceKind[] = [];
+  if (/electric|ηλεκτρ|φωτισμ/.test(low)) kinds.push("electrical");
+  if (/plumb|υδραυλ|ύδρευ|υδρευ|αποχετ|αποχέτ/.test(low)) kinds.push("plumbing");
+  if (/\bpump\b|αντλ/.test(low)) kinds.push("pump");
+  if (kinds.length && low.length < 90) {
+    if (kinds.length === 3) installAllServices();
+    else kinds.forEach((k) => installService(k));
+    st.setStatus("The services are on the drawing.");
+    return true;
+  }
   if (/^(all|ola|όλα|ολα)$/.test(low)) {
     st.setAllBoards(true);
     st.setStatus("Όλες οι όψεις ανοιχτές.");
