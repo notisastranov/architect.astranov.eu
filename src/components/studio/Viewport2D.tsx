@@ -6,7 +6,7 @@ import {
   pickEntity,
   projectExtents,
 } from "@/lib/cad/geometry";
-import { drawScene, fitCam, readPalette, screenToWorld } from "@/lib/cad/draw2d";
+import { drawScene, fitCam, readPalette, screenToWorld, worldToScreen } from "@/lib/cad/draw2d";
 import { paintOverlaysFromStore } from "@/lib/cad/draw-overlay";
 import { parsePoint } from "@/lib/cad/units";
 import { useCad } from "@/lib/cad/store";
@@ -29,7 +29,7 @@ const DRAW_TOOLS: Tool[] = [
 export function Viewport2D() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const panRef = useRef<{ x: number; y: number; camX: number; camY: number } | null>(null);
+  const panRef = useRef<{ x: number; y: number; camX: number; camY: number; moved: boolean; touch: boolean } | null>(null);
   const spaceRef = useRef(false);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{ dist: number; zoom: number; cx: number; cy: number; camX: number; camY: number } | null>(null);
@@ -126,8 +126,9 @@ export function Viewport2D() {
       };
       return;
     }
-    if (e.button === 1 || e.button === 2 || spaceRef.current || st.tool === "pan") {
-      panRef.current = { x: e.clientX, y: e.clientY, camX: st.cam.x, camY: st.cam.y };
+    const touchNav = e.pointerType === "touch" && (st.tool === "select" || st.tool === "pan");
+    if (e.button === 1 || e.button === 2 || spaceRef.current || st.tool === "pan" || touchNav) {
+      panRef.current = { x: e.clientX, y: e.clientY, camX: st.cam.x, camY: st.cam.y, moved: false, touch: touchNav };
       return;
     }
     if (e.button !== 0) return;
@@ -147,13 +148,19 @@ export function Viewport2D() {
       const rect = canvas.getBoundingClientRect();
       const dist = Math.hypot(p.x - q.x, p.y - q.y) || 1;
       const zoom = Math.max(0.0004, Math.min(80, pinch.zoom * (dist / pinch.dist)));
-      const sx = pinch.cx - rect.left;
-      const sy = pinch.cy - rect.top;
-      const start = { x: pinch.camX, y: pinch.camY, zoom: pinch.zoom };
-      const before = screenToWorld({ x: sx, y: sy }, start, rect.width, rect.height);
-      const next = { x: pinch.camX, y: pinch.camY, zoom };
-      const after = screenToWorld({ x: sx, y: sy }, next, rect.width, rect.height);
-      useCad.getState().setCam({ zoom, x: pinch.camX + (before.x - after.x), y: pinch.camY + (before.y - after.y) });
+      const sx = (p.x + q.x) / 2 - rect.left;
+      const sy = (p.y + q.y) / 2 - rect.top;
+      const anchor = screenToWorld(
+        { x: pinch.cx - rect.left, y: pinch.cy - rect.top },
+        { x: pinch.camX, y: pinch.camY, zoom: pinch.zoom },
+        rect.width,
+        rect.height,
+      );
+      useCad.getState().setCam({
+        zoom,
+        x: anchor.x - (sx - rect.width / 2) / zoom,
+        y: anchor.y + (sy - rect.height / 2) / zoom,
+      });
       return;
     }
     const pan = panRef.current;
@@ -161,6 +168,8 @@ export function Viewport2D() {
     if (pan) {
       const dx = e.clientX - pan.x;
       const dy = e.clientY - pan.y;
+      if (!pan.moved && Math.hypot(dx, dy) < 8) return;
+      pan.moved = true;
       useCad.getState().setCam({
         x: pan.camX - dx / st.cam.zoom,
         y: pan.camY + dy / st.cam.zoom,
@@ -171,9 +180,17 @@ export function Viewport2D() {
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    const pan = panRef.current;
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinchRef.current = null;
     panRef.current = null;
+    if (pan?.touch && !pan.moved) {
+      handleClick(resolveWorld(e.clientX, e.clientY), e.shiftKey);
+    } else if (pointers.current.size === 1) {
+      const left = [...pointers.current.values()][0]!;
+      const st = useCad.getState();
+      panRef.current = { x: left.x, y: left.y, camX: st.cam.x, camY: st.cam.y, moved: true, touch: true };
+    }
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {
@@ -186,12 +203,12 @@ export function Viewport2D() {
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const st = useCad.getState();
-    const sx = rect.width / 2;
-    const sy = rect.height / 2;
-    const before = screenToWorld({ x: sx, y: sy }, st.cam, rect.width, rect.height);
+    const focus = selectedWorld();
+    const at = focus ? worldToScreen(focus, st.cam, rect.width, rect.height) : { x: rect.width / 2, y: rect.height / 2 };
+    const before = screenToWorld(at, st.cam, rect.width, rect.height);
     const zoom = Math.max(0.0004, Math.min(80, st.cam.zoom * factor));
     const cam = { ...st.cam, zoom };
-    const after = screenToWorld({ x: sx, y: sy }, cam, rect.width, rect.height);
+    const after = screenToWorld(at, cam, rect.width, rect.height);
     useCad.getState().setCam({ zoom, x: cam.x + (before.x - after.x), y: cam.y + (before.y - after.y) });
   };
 
@@ -240,6 +257,23 @@ export function Viewport2D() {
       </div>
     </div>
   );
+}
+
+function selectedWorld(): Pt | null {
+  const st = useCad.getState();
+  const id = st.selection[0];
+  const e = id ? st.project.entities.find((en) => en.id === id) : undefined;
+  if (!e) return st.hover;
+  if (e.kind === "survey") return { x: e.e, y: e.n };
+  if (e.kind === "column" || e.kind === "circle") return e.c;
+  if (e.kind === "line" || e.kind === "wall" || e.kind === "dim") return { x: (e.a.x + e.b.x) / 2, y: (e.a.y + e.b.y) / 2 };
+  if (e.kind === "text") return e.p;
+  if (e.kind === "rect") return { x: (e.a.x + e.b.x) / 2, y: (e.a.y + e.b.y) / 2 };
+  if ("points" in e && e.points.length) {
+    const n = e.points.length;
+    return { x: e.points.reduce((s, p) => s + p.x, 0) / n, y: e.points.reduce((s, p) => s + p.y, 0) / n };
+  }
+  return st.hover;
 }
 
 function handleClick(world: Pt, shift: boolean) {

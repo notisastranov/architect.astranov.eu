@@ -61,8 +61,10 @@ export function ViewportGlobe() {
           dampingFactor={0.08}
           minDistance={R + 0.035}
           maxDistance={R * 6}
-          enablePan={false}
+          enablePan
+          zoomToCursor
           zoomSpeed={0.72}
+          touches={{ ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN }}
         />
       </Canvas>
       <GlobeHud />
