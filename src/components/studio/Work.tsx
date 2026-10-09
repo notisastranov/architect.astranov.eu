@@ -10,6 +10,7 @@ import { ViewportGlobe } from "./ViewportGlobe";
 import { YearTimeline } from "./YearTimeline";
 import { MapsPanel } from "./MapsPanel";
 import { VaultAudit } from "./VaultAudit";
+import { Properties } from "./DockPanels";
 import { talk, anotherVideo } from "./ai-talk";
 
 function Field({ scope, placeholder }: { scope: string; placeholder: string }) {
@@ -212,6 +213,9 @@ function Architect() {
 
 function Bim() {
   const project = useCad((s) => s.project);
+  const tool = useCad((s) => s.tool);
+  const ortho = useCad((s) => s.ortho);
+  const selected = useCad((s) => s.selection.length);
   const penta = project.entities.find((e) => e.kind === "polyline" && e.id === "penta");
   const olives = project.entities.filter((e) => e.kind === "column" && e.material === "Olive trunk").length;
   const services = [
@@ -219,14 +223,52 @@ function Bim() {
     project.entities.some((e) => e.id.startsWith("svc-water")) ? "Plumbing" : "",
     project.entities.some((e) => e.id.startsWith("svc-pump")) ? "Pump" : "",
   ].filter(Boolean);
+  const tools = [
+    ["select", "Select"],
+    ["pan", "Pan"],
+    ["wall", "Wall"],
+    ["door", "Door"],
+    ["window", "Window"],
+    ["column", "Column"],
+    ["line", "Line"],
+    ["dim", "Dimension"],
+    ["text", "Note"],
+  ] as const;
   return (
     <section>
       <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">02 — BIMCAD</p>
       <h2 className="mt-2 text-xl font-medium">The building</h2>
-      <p className="mt-2 text-sm text-muted">The drawing, with its sizes. Ask for the electrical, the plumbing, the pump. You do not have to click the geometry into place.</p>
-      <div className="mt-4 h-[68dvh] overflow-hidden rounded-sm border border-border">
-        <Viewport2D />
+      <p className="mt-2 text-sm text-muted">Correct the drawing with the tools, or say the change. Select a part and its sizes are underneath.</p>
+      <div className="mt-4 overflow-hidden rounded-sm border border-border">
+        <div className="flex flex-wrap gap-1 border-b border-border p-1">
+          {tools.map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={tool === id}
+              onClick={() => useCad.getState().setTool(id)}
+              className={`h-9 rounded-sm px-2.5 text-xs ${tool === id ? "bg-primary text-primary-fg" : "bg-elevated text-muted"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1 border-b border-border p-1">
+          <button type="button" onClick={() => useCad.getState().undo()} className="h-9 rounded-sm bg-elevated px-2.5 text-xs">Undo</button>
+          <button type="button" onClick={() => useCad.getState().redo()} className="h-9 rounded-sm bg-elevated px-2.5 text-xs">Redo</button>
+          <button type="button" onClick={() => useCad.getState().zoomExtents()} className="h-9 rounded-sm bg-elevated px-2.5 text-xs">Fit</button>
+          <button type="button" onClick={() => useCad.getState().deleteSelection()} className="h-9 rounded-sm bg-elevated px-2.5 text-xs">Delete</button>
+          <button type="button" aria-pressed={ortho} onClick={() => useCad.getState().setOrtho(!ortho)} className={`h-9 rounded-sm px-2.5 text-xs ${ortho ? "bg-primary text-primary-fg" : "bg-elevated text-muted"}`}>Ortho</button>
+        </div>
+        <div className="h-[68dvh]">
+          <Viewport2D />
+        </div>
       </div>
+      {selected > 0 && (
+        <div className="mt-3 rounded-sm border border-border p-3">
+          <Properties />
+        </div>
+      )}
       <ul className="mt-4 space-y-1 text-sm text-muted">
         <li>{project.name}</li>
         <li>{penta && penta.kind === "polyline" ? "Regular pentagon, side 12.00 m, interior angle 108°." : "No pentagon on this sheet yet."}</li>
@@ -247,6 +289,7 @@ function Bim() {
 
 function Topo() {
   const project = useCad((s) => s.project);
+  const overlays = useCad((s) => s.overlays);
   const points = project.entities.filter((e) => e.kind === "survey");
   const zs = points.map((e) => (e.kind === "survey" ? e.z : 0));
   const zMin = zs.length ? Math.min(...zs) : 0;
@@ -255,7 +298,19 @@ function Topo() {
     <section className="pb-16">
       <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">03 — TOPO</p>
       <h2 className="mt-2 text-xl font-medium">The land</h2>
-      <p className="mt-2 text-sm text-muted">Altitude, north, old sheets against new ones, the years of the ground. A drawing that does not agree is marked. It is evidence, not a verdict.</p>
+      <p className="mt-2 text-sm text-muted">Your imported sheets stay here, on the drawing below them. Altitude, north, old against new. A shift is evidence, not a verdict.</p>
+      {overlays.length === 0 ? (
+        <p className="mt-4 text-sm text-muted">No imported sheet is in this browser. Import it again under the map. From now on it is kept.</p>
+      ) : (
+        <div className="mt-4 flex gap-2 overflow-x-auto">
+          {overlays.map((s) => (
+            <button key={s.id} type="button" onClick={() => useCad.getState().setActiveOverlay(s.id)} className="shrink-0 text-left">
+              <img src={s.src} alt={s.name} className="h-36 w-auto rounded-sm object-cover" />
+              <span className="mt-1 block text-xs text-muted">{s.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <ul className="mt-4 space-y-1 text-sm text-muted">
         <li>North is up. The pentagon point faces north.</li>
         <li>

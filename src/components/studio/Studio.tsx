@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useCad } from "@/lib/cad/store";
+import { useCad, adoptSession } from "@/lib/cad/store";
 import { SAMPLE_CATALOG } from "@/lib/cad/samples";
 import { exportJson, exportSurveyCsv, exportSvg } from "@/lib/cad/export";
 import { BrandMark } from "./Mark";
@@ -49,7 +49,8 @@ export function Studio() {
 
   useEffect(() => {
     const r = useCad.persist.rehydrate() as void | Promise<void>;
-    if (r && typeof r.then === "function") void r.then(() => undefined);
+    if (r && typeof r.then === "function") void r.then(() => adoptSession());
+    else adoptSession();
   }, []);
 
   useEffect(() => {
@@ -133,10 +134,13 @@ function TopBar() {
   const undo = useCad((s) => s.undo);
   const redo = useCad((s) => s.redo);
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-bg px-3">
-      <button type="button" onClick={() => useCad.getState().setProjectsOpen(true)} className="flex min-w-0 items-center gap-2">
-        <BrandMark className="size-5 text-primary" />
-        <span className="truncate text-sm font-medium">Astranov Architect</span>
+    <header className="flex shrink-0 items-center gap-2 border-b border-border bg-bg px-3 py-2">
+      <button type="button" onClick={() => useCad.getState().setProjectsOpen(true)} className="flex min-w-0 items-center gap-2 text-left">
+        <BrandMark className="size-5 shrink-0 text-primary" />
+        <span className="min-w-0">
+          <span className="block text-[10px] tracking-[0.16em] text-muted">HOME</span>
+          <span className="block text-sm font-medium leading-tight">Astranov Architect Forensic TopoBimCad</span>
+        </span>
       </button>
       <div className="ml-auto flex items-center">
         <IconBtn label="Undo" onClick={undo}><Undo2 className="size-4" /></IconBtn>

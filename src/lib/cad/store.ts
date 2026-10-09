@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { cloneProject, nid, projectExtents } from "./geometry";
 import { applyOps, type ApplyResult } from "./ops";
 import { blankProject } from "./samples";
@@ -183,8 +183,8 @@ export const useCad = create<CadState>()(
       forensicSub: "topo",
       measureWeight: 1.6,
       boards: { ...ALL_BOARDS },
-      aiImages: ["/marmarades/house.jpg"],
-      aiVideos: ["/marmarades/film.mp4", "/marmarades/film-wide.mp4"],
+      aiImages: ["/marmarades/pentagon-plan.jpg?v=2", "/marmarades/pentagon-aerial.jpg?v=2"],
+      aiVideos: ["/marmarades/film.mp4?v=2"],
       fitNonce: 1,
       dirtyFit: true,
       overlays: [],
@@ -499,7 +499,28 @@ export const useCad = create<CadState>()(
         boards: s.boards,
         cam: s.cam,
         globe: { ...s.globe, flyNonce: 0 },
+        overlays: s.overlays,
+        activeOverlayId: s.activeOverlayId,
       }),
+      storage: createJSONStorage(() => ({
+        getItem: (name) => localStorage.getItem(name),
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, value);
+          } catch {
+            try {
+              const parsed = JSON.parse(value) as { state?: { overlays?: { src?: string }[] } };
+              parsed.state?.overlays?.forEach((o) => {
+                if (o.src && o.src.length > 400000) o.src = "";
+              });
+              localStorage.setItem(name, JSON.stringify(parsed));
+            } catch {
+              /* the drawing stays for this visit */
+            }
+          }
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      })),
     },
   ),
 );
@@ -539,6 +560,47 @@ function toolStatus(t: Tool): string {
     default:
       return "";
   }
+}
+
+export function adoptSession() {
+  if (typeof localStorage === "undefined") return;
+  const cur = useCad.getState();
+  let entities = cur.project.entities;
+  let overlays = cur.overlays;
+  if (localStorage.getItem("astranov-legacy-merged") !== "1") {
+    for (const key of ["astranov-bimcad-v3", "astranov-bimcad-v2"]) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      try {
+        const state = (JSON.parse(raw) as { state?: { project?: Project; overlays?: OverlaySheet[] } }).state;
+        const old = state?.project?.entities ?? [];
+        const ids = new Set(entities.map((e) => e.id));
+        const extra = old.filter((e) => e && !ids.has(e.id));
+        if (extra.length) entities = [...entities, ...extra];
+        const oldSheets = state?.overlays ?? [];
+        const have = new Set(overlays.map((o) => o.id));
+        const more = oldSheets.filter((o) => o?.src && !have.has(o.id));
+        if (more.length) overlays = [...overlays, ...more];
+      } catch {
+        /* an older save that cannot be read stays where it is */
+      }
+    }
+    localStorage.setItem("astranov-legacy-merged", "1");
+  }
+  const pictures = ["/marmarades/pentagon-plan.jpg?v=2", "/marmarades/pentagon-aerial.jpg?v=2"];
+  const films = ["/marmarades/film.mp4?v=2"];
+  const aiImages = [
+    ...pictures,
+    ...cur.aiImages.filter((src) => !src.includes("/marmarades/house") && !src.includes("/marmarades/pentagon") && !src.includes("/marmarades/film")),
+  ];
+  const aiVideos = [...films, ...cur.aiVideos.filter((src) => !src.includes("/marmarades/film"))];
+  useCad.setState({
+    project: entities === cur.project.entities ? cur.project : { ...cur.project, entities },
+    overlays,
+    aiImages,
+    aiVideos,
+    dirtyFit: true,
+  });
 }
 
 export function layerColor(project: Project, layerId: string): string {
