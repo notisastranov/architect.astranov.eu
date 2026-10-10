@@ -577,7 +577,7 @@ export const SAMPLE_CATALOG = [
     title: "Iron Olive Tree Greenhouse Villa",
     discipline: "architecture" as const,
     spec: "Πεντάγωνο 12 m  ·  HEA 220  ·  λαμαρίνα",
-    blurb: "The same olive pentagon in steel. H beams and an iron-sheet floor.",
+    blurb: "HEA 220 is the pentagon and the columns, down to base plates. No piles.",
     load: () => sampleOliveTreehouse("iron"),
   },
   {

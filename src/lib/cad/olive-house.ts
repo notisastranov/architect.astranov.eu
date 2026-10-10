@@ -124,6 +124,39 @@ export function sampleOliveTreehouse(frame: "timber" | "iron" = "timber"): Proje
   const trunks = [...verts, ...mids];
   trunks.forEach((p, i) => {
     const n = i + 1;
+    if (iron) {
+      push({
+        id: `col-${n}`,
+        kind: "column",
+        layerId: "cols",
+        name: `Κολόνα Η ${n}`,
+        c: p,
+        width: 220,
+        depth: 210,
+        height: SOFFIT,
+        rotation: i < 5 ? (Math.PI / 2 + i * (2 * Math.PI) / 5) : 0,
+        material: "HEA 220 column",
+      });
+      push({
+        id: `plate-${n}`,
+        kind: "rect",
+        layerId: "cols",
+        a: { x: p.x - 280, y: p.y - 280 },
+        b: { x: p.x + 280, y: p.y + 280 },
+      });
+      push({
+        id: `col-stn-${n}`,
+        kind: "survey",
+        layerId: "site",
+        name: `H${n}`,
+        e: p.x,
+        n: p.y,
+        z: 0,
+        code: `H${n}`,
+        desc: "HEA 220 μέχρι το έδαφος. Πέλμα 560×560. Όχι εμπήξιμο.",
+      });
+      return;
+    }
     const dia = TRUNK_DIA[i] ?? 500;
     push({
       id: `elia-${n}`,
@@ -289,9 +322,10 @@ export function sampleOliveTreehouse(frame: "timber" | "iron" = "timber"): Proje
     ? [
         [-R - 500, -R - 1800, 280, "IRON OLIVE TREE GREENHOUSE VILLA"],
         [-R - 500, -R - 2300, 150, "Κανονικό πεντάγωνο. Πλευρά 12,00 m. Εσωτερική γωνία 108°."],
-        [-R - 500, -R - 2750, 140, "Δοκοί ΗΕΑ 220, χάλυβας S235, δύο τεμάχια των 6,00 m σε κάθε πλευρά."],
-        [-R - 500, -R - 3150, 140, "Δάπεδο από λαμαρίνα. Όχι ξύλο. Ελιές ως κολόνες. Υαλοπίνακας θερμοκηπίου."],
-        [-R - 500, -R - 3550, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
+        [-R - 500, -R - 2750, 140, "Δοκοί ΗΕΑ 220 σε πεντάγωνο. Οι ίδιες δοκοί κατεβαίνουν κολόνες ως το έδαφος."],
+        [-R - 500, -R - 3150, 140, "Πέλμα 560×560 στην επιφάνεια. Όχι εμπήξιμο της δοκού βαθιά στο έδαφος."],
+        [-R - 500, -R - 3550, 140, "Δάπεδο από λαμαρίνα. Υαλοπίνακας θερμοκηπίου. Κάθαρση 2,00 m."],
+        [-R - 500, -R - 3950, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
       ]
     : [
         [-R - 500, -R - 1800, 240, "ΔΕΝΤΡΟΣΠΙΤΟ · ΚΑΝΟΝΙΚΟ ΠΕΝΤΑΓΩΝΟ · Κ.Μ. 257"],
@@ -305,13 +339,36 @@ export function sampleOliveTreehouse(frame: "timber" | "iron" = "timber"): Proje
     push({ id: `note-${i}`, kind: "text", layerId: "notes", p: { x, y }, text, size, rotation: 0 });
   });
 
+  if (iron) {
+    const x0 = R + 4500;
+    const ground = -1500;
+    const head = ground + SOFFIT;
+    const span = 6000;
+    const line = (id: string, a: Pt, b: Pt) => push({ id, kind: "line", layerId: "dims", a, b });
+    line("elev-ground", { x: x0 - 1800, y: ground }, { x: x0 + span + 1800, y: ground });
+    for (const x of [x0, x0 + span]) {
+      line(`elev-web-${x}`, { x, y: ground }, { x, y: head });
+      line(`elev-fl-a-${x}`, { x: x - 110, y: ground }, { x: x - 110, y: head });
+      line(`elev-fl-b-${x}`, { x: x + 110, y: ground }, { x: x + 110, y: head });
+      line(`elev-foot-a-${x}`, { x: x - 110, y: ground }, { x: x + 110, y: ground });
+    }
+    line("elev-beam-bot", { x: x0 - 110, y: head }, { x: x0 + span + 110, y: head });
+    line("elev-beam-top", { x: x0 - 110, y: head + 210 }, { x: x0 + span + 110, y: head + 210 });
+    push({ id: "elev-plate-1", kind: "rect", layerId: "cols", a: { x: x0 - 280, y: ground - 20 }, b: { x: x0 + 280, y: ground + 16 } });
+    push({ id: "elev-plate-2", kind: "rect", layerId: "cols", a: { x: x0 + span - 280, y: ground - 20 }, b: { x: x0 + span + 280, y: ground + 16 } });
+    push({ id: "elev-title", kind: "text", layerId: "notes", p: { x: x0 - 400, y: head + 900 }, text: "ΟΨΗ · ΗΕΑ 220 ως το πέλμα", size: 180, rotation: 0 });
+    push({ id: "elev-note", kind: "text", layerId: "notes", p: { x: x0 - 400, y: ground - 500 }, text: "Πέλμα στο έδαφος. Όχι εμπήξιμο.", size: 140, rotation: 0 });
+    push({ id: "elev-dim-h", kind: "dim", layerId: "dims", a: { x: x0 - 700, y: ground }, b: { x: x0 - 700, y: head }, offset: 0 });
+    push({ id: "elev-dim-l", kind: "dim", layerId: "dims", a: { x: x0, y: ground - 900 }, b: { x: x0 + span, y: ground - 900 }, offset: 0 });
+  }
+
   return {
     id: iron ? "iron-olive-greenhouse-villa" : "olive-treehouse-marmarades",
     name: iron ? "Iron Olive Tree Greenhouse Villa" : "Δεντρόσπιτο Μαρμαράδες",
     discipline: "architecture",
     units: "m",
     description: iron
-      ? "Iron Olive Tree Greenhouse Villa. Same pentagon on the olive trunks. HEA 220 beams and an iron-sheet floor instead of timber."
+      ? "Iron Olive Tree Greenhouse Villa. HEA 220 forms the pentagon and the columns down to base plates on the ground. No deep embedment. Iron-sheet floor."
       : "Regular pentagon, side 12 m as two 6 m beams, on ten olive trunks at the centre of the Marmarades field. Rabote deck, plexiglass, silver curtains, jacuzzi, solar heater, PV.",
     layers: defaultLayers("architecture"),
     entities,

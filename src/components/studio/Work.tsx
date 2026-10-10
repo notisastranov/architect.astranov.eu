@@ -176,7 +176,7 @@ function Architect() {
           <span className="block px-2 py-2 text-xs">Pentagon olive treehouse · timber</span>
         </button>
         <button type="button" onClick={() => useCad.getState().loadProject(sampleOliveTreehouse("iron"))} className="overflow-hidden rounded-sm border border-border text-left">
-          <img src="/marmarades/iron-villa.jpg?v=1" alt="Iron Olive Tree Greenhouse Villa" className="h-36 w-full object-cover" />
+          <img src="/marmarades/iron-villa.jpg?v=2" alt="Iron Olive Tree Greenhouse Villa" className="h-36 w-full object-cover" />
           <span className="block px-2 py-2 text-xs">Iron Olive Tree Greenhouse Villa</span>
         </button>
       </div>
@@ -229,6 +229,7 @@ function Bim() {
   const selected = useCad((s) => s.selection.length);
   const penta = project.entities.find((e) => e.kind === "polyline" && e.id === "penta");
   const olives = project.entities.filter((e) => e.kind === "column" && e.material === "Olive trunk").length;
+  const hcols = project.entities.filter((e) => e.kind === "column" && e.material === "HEA 220 column").length;
   const deck = project.entities.find((e) => e.id === "deck");
   const deckMat = deck && deck.kind === "slab" ? deck.material : "Deck";
   const services = [
@@ -285,7 +286,7 @@ function Bim() {
       <ul className="mt-4 space-y-1 text-sm text-muted">
         <li>{project.name}</li>
         <li>{penta && penta.kind === "polyline" ? "Regular pentagon, side 12.00 m, interior angle 108°." : "No pentagon on this sheet yet."}</li>
-        <li>{olives} olive trunks as columns. {deckMat}. Glass screens.</li>
+        <li>{hcols ? `${hcols} HEA columns to base plates. Not driven into the ground.` : `${olives} olive trunks as columns.`} {deckMat}. Glass screens.</li>
         <li>{services.length ? services.join(" · ") + " drawn." : "Services not drawn yet."}</li>
       </ul>
       <div className="mt-4 flex flex-wrap gap-2">
