@@ -2,12 +2,13 @@ import { nid } from "./geometry";
 import type { Entity, Layer, PolylineEnt, Project, Pt, SlabEnt } from "./types";
 import { useCad } from "./store";
 
-export type ServiceKind = "electrical" | "plumbing" | "pump";
+export type ServiceKind = "electrical" | "plumbing" | "pump" | "mechanical";
 
 const LAYERS: Record<string, Layer> = {
   elec: { id: "elec", name: "Electrical", visible: true, locked: false, color: "#e2b340" },
   water: { id: "water", name: "Plumbing", visible: true, locked: false, color: "#7eb6d6" },
   equip: { id: "equip", name: "Equipment", visible: true, locked: false, color: "#d27a55" },
+  mech: { id: "mech", name: "Mechanical", visible: true, locked: false, color: "#c46b8a" },
 };
 
 function ringOf(project: Project): Pt[] {
@@ -114,17 +115,36 @@ function build(project: Project, kind: ServiceKind): Entity[] {
       rotation: 0,
     });
   }
+  if (kind === "mechanical") {
+    ensure(project, "mech");
+    const bath = jacuzzi(project);
+    const roof = scaled(pts, 0.55);
+    made.push({ id: "svc-mech-pv", kind: "polyline", layerId: "mech", name: "Φωτοβολταϊκά", points: roof, closed: true });
+    const solar = { x: c.x + 1400, y: c.y + 900 };
+    made.push({ id: "svc-mech-solar", kind: "circle", layerId: "mech", name: "Ηλιακός", c: solar, r: 520 });
+    made.push({ id: "svc-mech-solar-link", kind: "line", layerId: "mech", a: solar, b: bath });
+    made.push({ id: "svc-mech-vent", kind: "circle", layerId: "mech", name: "Εξαερισμός", c: { x: c.x, y: c.y + 200 }, r: 280 });
+    made.push({
+      id: "svc-mech-note",
+      kind: "text",
+      layerId: "mech",
+      p: { x: c.x + 400, y: c.y - 200 },
+      text: "Μηχανολογικά · ηλιακός · φωτοβολταϊκά · εξαερισμός στέγης",
+      size: 180,
+      rotation: 0,
+    });
+  }
   return made;
 }
 
 export function installService(kind: ServiceKind) {
-  const prefix = kind === "electrical" ? "svc-elec" : kind === "plumbing" ? "svc-water" : "svc-pump";
+  const prefix = kind === "electrical" ? "svc-elec" : kind === "plumbing" ? "svc-water" : kind === "pump" ? "svc-pump" : "svc-mech";
   useCad.getState().commit((project) => {
     const next = structuredClone(project);
     drop(next, prefix);
     next.entities.push(...build(next, kind));
     return next;
-  }, kind === "electrical" ? "Electrical is on the drawing." : kind === "plumbing" ? "Plumbing is on the drawing." : "The pump is on the drawing.");
+  }, kind === "electrical" ? "Electrical is on the drawing." : kind === "plumbing" ? "Plumbing is on the drawing." : kind === "pump" ? "The pump is on the drawing." : "Mechanical is on the drawing.");
 }
 
 export function installAllServices() {
@@ -133,7 +153,8 @@ export function installAllServices() {
     drop(next, "svc-elec");
     drop(next, "svc-water");
     drop(next, "svc-pump");
-    next.entities.push(...build(next, "electrical"), ...build(next, "plumbing"), ...build(next, "pump"));
+    drop(next, "svc-mech");
+    next.entities.push(...build(next, "electrical"), ...build(next, "plumbing"), ...build(next, "pump"), ...build(next, "mechanical"));
     return next;
-  }, "Electrical, plumbing and the pump are on the drawing.");
+  }, "Electrical, mechanical, plumbing and the pump are on the drawing.");
 }

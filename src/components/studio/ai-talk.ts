@@ -28,8 +28,9 @@ function localOrder(text: string): boolean {
   if (/electric|ηλεκτρ|φωτισμ/.test(low)) kinds.push("electrical");
   if (/plumb|υδραυλ|ύδρευ|υδρευ|αποχετ|αποχέτ/.test(low)) kinds.push("plumbing");
   if (/\bpump\b|αντλ/.test(low)) kinds.push("pump");
-  if (kinds.length && low.length < 90) {
-    if (kinds.length === 3) installAllServices();
+  if (/μηχανολ|mechanical|φωτοβολτ|ηλιακ/.test(low)) kinds.push("mechanical");
+  if (kinds.length && low.length < 120) {
+    if (kinds.length >= 3) installAllServices();
     else kinds.forEach((k) => installService(k));
     st.setStatus("The services are on the drawing.");
     return true;

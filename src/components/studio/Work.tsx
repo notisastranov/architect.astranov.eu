@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCad } from "@/lib/cad/store";
 import { exportJson } from "@/lib/cad/export";
@@ -13,6 +13,7 @@ import { VaultAudit } from "./VaultAudit";
 import { Properties } from "./DockPanels";
 import { sampleOliveTreehouse } from "@/lib/cad/olive-house";
 import { talk, anotherVideo } from "./ai-talk";
+import { LandSurvey } from "./LandSurvey";
 
 function Field({ scope, placeholder }: { scope: string; placeholder: string }) {
   const [text, setText] = useState("");
@@ -171,7 +172,7 @@ function Architect() {
     <section>
       <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">01 — ARCHITECT</p>
       <h2 className="mt-2 text-xl font-medium">The AI</h2>
-      <p className="mt-2 text-sm text-muted">Γράψε τη διόρθωση και φτιάξε νέα εικόνα ή νέο βίντεο. Το έτοιμο φιλμ του σιδερένιου διώροφου είναι από κάτω.</p>
+      <p className="mt-2 text-sm text-muted">Από την εικόνα και τα στοιχεία που ήδη υπάρχουν. Από κάτω το σχέδιο, μετά η γη.</p>
       <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="mt-4 w-full rounded-sm bg-elevated px-3 py-2 text-sm outline-none" />
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button type="button" disabled={busy} onClick={() => void makePicture()} className="h-12 rounded-sm bg-primary px-3 text-sm text-primary-fg disabled:opacity-40">
@@ -247,9 +248,14 @@ function Bim() {
   const deckMat = deck && deck.kind === "slab" ? deck.material : "Deck";
   const services = [
     project.entities.some((e) => e.id.startsWith("svc-elec")) ? "Electrical" : "",
+    project.entities.some((e) => e.id.startsWith("svc-mech")) ? "Mechanical" : "",
     project.entities.some((e) => e.id.startsWith("svc-water")) ? "Plumbing" : "",
     project.entities.some((e) => e.id.startsWith("svc-pump")) ? "Pump" : "",
   ].filter(Boolean);
+  useEffect(() => {
+    const has = useCad.getState().project.entities.some((e) => e.id.startsWith("svc-elec"));
+    if (!has) installAllServices();
+  }, []);
   const tools = [
     ["select", "Select"],
     ["pan", "Pan"],
@@ -304,6 +310,7 @@ function Bim() {
       </ul>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={() => installService("electrical")} className="h-10 rounded-sm bg-elevated px-3 text-xs">Electrical</button>
+        <button type="button" onClick={() => installService("mechanical")} className="h-10 rounded-sm bg-elevated px-3 text-xs">Mechanical</button>
         <button type="button" onClick={() => installService("plumbing")} className="h-10 rounded-sm bg-elevated px-3 text-xs">Plumbing</button>
         <button type="button" onClick={() => installService("pump")} className="h-10 rounded-sm bg-elevated px-3 text-xs">Pump</button>
         <button type="button" onClick={() => installAllServices()} className="h-10 rounded-sm bg-primary px-3 text-xs text-primary-fg">All equipment</button>
@@ -325,7 +332,8 @@ function Topo() {
     <section className="pb-16">
       <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">03 — TOPO</p>
       <h2 className="mt-2 text-xl font-medium">The land</h2>
-      <p className="mt-2 text-sm text-muted">Your imported sheets stay here, on the drawing below them. Altitude, north, old against new. A shift is evidence, not a verdict.</p>
+      <p className="mt-2 text-sm text-muted">Παλιές εικόνες της γης, όλες οι πλευρές και οι γωνίες του πολυγώνου, και μέτρηση με το ποντίκι στο σημείο που δείχνεις.</p>
+      <LandSurvey />
       {overlays.length === 0 ? (
         <p className="mt-4 text-sm text-muted">No imported sheet is in this browser. Import it again under the map. From now on it is kept.</p>
       ) : (
