@@ -176,8 +176,8 @@ function Architect() {
           <span className="block px-2 py-2 text-xs">Pentagon olive treehouse · timber</span>
         </button>
         <button type="button" onClick={() => useCad.getState().loadProject(sampleOliveTreehouse("iron"))} className="overflow-hidden rounded-sm border border-border text-left">
-          <img src="/marmarades/iron-villa.jpg?v=2" alt="Iron Olive Tree Greenhouse Villa" className="h-36 w-full object-cover" />
-          <span className="block px-2 py-2 text-xs">Iron Olive Tree Greenhouse Villa</span>
+          <img src="/marmarades/iron-villa.jpg?v=3" alt="Σιδερένιο διώροφο δεντρόσπιτο" className="h-36 w-full object-cover" />
+          <span className="block px-2 py-2 text-xs">Σιδερένιο διώροφο δεντρόσπιτο</span>
         </button>
       </div>
       <div className="mt-4 flex gap-2 overflow-x-auto">

@@ -574,10 +574,10 @@ export const SAMPLE_CATALOG = [
   },
   {
     id: "iron-olive",
-    title: "Iron Olive Tree Greenhouse Villa",
+    title: "Σιδερένιο διώροφο δεντρόσπιτο",
     discipline: "architecture" as const,
     spec: "Πεντάγωνο 12 m  ·  HEA 220  ·  λαμαρίνα",
-    blurb: "HEA 220 is the pentagon and the columns, down to base plates. No piles.",
+    blurb: "Same two-storey treehouse. Steel instead of timber. Base plates, no piles.",
     load: () => sampleOliveTreehouse("iron"),
   },
   {
