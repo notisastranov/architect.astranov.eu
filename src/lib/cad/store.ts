@@ -183,8 +183,8 @@ export const useCad = create<CadState>()(
       forensicSub: "topo",
       measureWeight: 1.6,
       boards: { ...ALL_BOARDS },
-      aiImages: ["/marmarades/pentagon-plan.jpg?v=2", "/marmarades/pentagon-aerial.jpg?v=2"],
-      aiVideos: ["/marmarades/film.mp4?v=2"],
+      aiImages: ["/marmarades/iron-villa.jpg?v=1", "/marmarades/pentagon-plan.jpg?v=2", "/marmarades/pentagon-aerial.jpg?v=2"],
+      aiVideos: ["/marmarades/iron-villa.mp4?v=1", "/marmarades/film.mp4?v=2"],
       fitNonce: 1,
       dirtyFit: true,
       overlays: [],
@@ -587,13 +587,13 @@ export function adoptSession() {
     }
     localStorage.setItem("astranov-legacy-merged", "1");
   }
-  const pictures = ["/marmarades/pentagon-plan.jpg?v=2", "/marmarades/pentagon-aerial.jpg?v=2"];
-  const films = ["/marmarades/film.mp4?v=2"];
+  const pictures = ["/marmarades/iron-villa.jpg?v=1", "/marmarades/pentagon-plan.jpg?v=2", "/marmarades/pentagon-aerial.jpg?v=2"];
+  const films = ["/marmarades/iron-villa.mp4?v=1", "/marmarades/film.mp4?v=2"];
   const aiImages = [
     ...pictures,
-    ...cur.aiImages.filter((src) => !src.includes("/marmarades/house") && !src.includes("/marmarades/pentagon") && !src.includes("/marmarades/film")),
+    ...cur.aiImages.filter((src) => !src.includes("/marmarades/house") && !src.includes("/marmarades/pentagon") && !src.includes("/marmarades/iron-villa") && !src.includes("/marmarades/film")),
   ];
-  const aiVideos = [...films, ...cur.aiVideos.filter((src) => !src.includes("/marmarades/film"))];
+  const aiVideos = [...films, ...cur.aiVideos.filter((src) => !src.includes("/marmarades/film") && !src.includes("/marmarades/iron-villa"))];
   useCad.setState({
     project: entities === cur.project.entities ? cur.project : { ...cur.project, entities },
     overlays,

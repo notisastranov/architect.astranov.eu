@@ -11,6 +11,7 @@ import { YearTimeline } from "./YearTimeline";
 import { MapsPanel } from "./MapsPanel";
 import { VaultAudit } from "./VaultAudit";
 import { Properties } from "./DockPanels";
+import { sampleOliveTreehouse } from "@/lib/cad/olive-house";
 import { talk, anotherVideo } from "./ai-talk";
 
 function Field({ scope, placeholder }: { scope: string; placeholder: string }) {
@@ -169,6 +170,16 @@ function Architect() {
       <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">01 — ARCHITECT</p>
       <h2 className="mt-2 text-xl font-medium">The AI</h2>
       <p className="mt-2 text-sm text-muted">Drop the photographs and the notes of the place. It makes the pictures and the film of the finished work, on the real ground.</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <button type="button" onClick={() => useCad.getState().loadProject(sampleOliveTreehouse("timber"))} className="overflow-hidden rounded-sm border border-border text-left">
+          <img src="/marmarades/pentagon-aerial.jpg?v=2" alt="Timber pentagon treehouse" className="h-36 w-full object-cover" />
+          <span className="block px-2 py-2 text-xs">Pentagon olive treehouse · timber</span>
+        </button>
+        <button type="button" onClick={() => useCad.getState().loadProject(sampleOliveTreehouse("iron"))} className="overflow-hidden rounded-sm border border-border text-left">
+          <img src="/marmarades/iron-villa.jpg?v=1" alt="Iron Olive Tree Greenhouse Villa" className="h-36 w-full object-cover" />
+          <span className="block px-2 py-2 text-xs">Iron Olive Tree Greenhouse Villa</span>
+        </button>
+      </div>
       <div className="mt-4 flex gap-2 overflow-x-auto">
         {images.map((src) => (
           <img key={src} src={src} alt="Finished project" className="h-44 w-auto shrink-0 rounded-sm object-cover" />
@@ -218,6 +229,8 @@ function Bim() {
   const selected = useCad((s) => s.selection.length);
   const penta = project.entities.find((e) => e.kind === "polyline" && e.id === "penta");
   const olives = project.entities.filter((e) => e.kind === "column" && e.material === "Olive trunk").length;
+  const deck = project.entities.find((e) => e.id === "deck");
+  const deckMat = deck && deck.kind === "slab" ? deck.material : "Deck";
   const services = [
     project.entities.some((e) => e.id.startsWith("svc-elec")) ? "Electrical" : "",
     project.entities.some((e) => e.id.startsWith("svc-water")) ? "Plumbing" : "",
@@ -272,7 +285,7 @@ function Bim() {
       <ul className="mt-4 space-y-1 text-sm text-muted">
         <li>{project.name}</li>
         <li>{penta && penta.kind === "polyline" ? "Regular pentagon, side 12.00 m, interior angle 108°." : "No pentagon on this sheet yet."}</li>
-        <li>{olives} olive trunks as columns. Deck in rabote, screens in plexiglass, silver curtains.</li>
+        <li>{olives} olive trunks as columns. {deckMat}. Glass screens.</li>
         <li>{services.length ? services.join(" · ") + " drawn." : "Services not drawn yet."}</li>
       </ul>
       <div className="mt-4 flex flex-wrap gap-2">

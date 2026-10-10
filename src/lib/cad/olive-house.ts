@@ -22,7 +22,6 @@ function midway(a: Pt, b: Pt): Pt {
  */
 const SOFFIT = 2000;
 const OLIVE_D = 420;
-const DECK_TOP = SOFFIT + OLIVE_D + 20;
 
 /** Κ.Μ. 257 Γαιών Κοσκινού, κορυφές 1–19, ΕΓΣΑ ’87. X ανατολή, Y βορράς. */
 const C_E = 878647.8864;
@@ -87,7 +86,13 @@ function beam(
   };
 }
 
-export function sampleOliveTreehouse(): Project {
+export function sampleOliveTreehouse(frame: "timber" | "iron" = "timber"): Project {
+  const iron = frame === "iron";
+  const beamDepth = iron ? 210 : OLIVE_D;
+  const beamBreadth = 220;
+  const deckThick = iron ? 8 : 20;
+  const deckTop = SOFFIT + beamDepth + deckThick;
+  const beamName = iron ? "HEA 220 S235" : "Pine beam 6m";
   const entities: Entity[] = [];
   const push = (e: Entity) => entities.push(e);
 
@@ -149,8 +154,8 @@ export function sampleOliveTreehouse(): Project {
   verts.forEach((v, i) => {
     const n = verts[(i + 1) % 5]!;
     const m = mids[i]!;
-    push(beam(`side-a-${i}`, v.x, v.y, m.x, m.y, 220, OLIVE_D, SOFFIT + OLIVE_D, "Pine beam 6m"));
-    push(beam(`side-b-${i}`, m.x, m.y, n.x, n.y, 220, OLIVE_D, SOFFIT + OLIVE_D, "Pine beam 6m"));
+    push(beam(`side-a-${i}`, v.x, v.y, m.x, m.y, beamBreadth, beamDepth, SOFFIT + beamDepth, beamName));
+    push(beam(`side-b-${i}`, m.x, m.y, n.x, n.y, beamBreadth, beamDepth, SOFFIT + beamDepth, beamName));
   });
 
   push({
@@ -165,10 +170,10 @@ export function sampleOliveTreehouse(): Project {
     id: "deck",
     kind: "slab",
     layerId: "slabs",
-    name: "Ταβανοδάπεδο ραμποτέ 20×200",
-    material: "Rabote deck",
-    thickness: 20,
-    elevation: DECK_TOP,
+    name: iron ? "Λαμαρίνα δαπέδου" : "Ταβανοδάπεδο ραμποτέ 20×200",
+    material: iron ? "Iron sheet" : "Rabote deck",
+    thickness: deckThick,
+    elevation: deckTop,
     points: verts,
   });
 
@@ -180,7 +185,7 @@ export function sampleOliveTreehouse(): Project {
     name: "Τζακούζι 2.20×2.20",
     material: "Jacuzzi",
     thickness: 750,
-    elevation: DECK_TOP + 750,
+    elevation: deckTop + 750,
     points: [
       { x: north.x - 1100, y: north.y - 3600 },
       { x: north.x + 1100, y: north.y - 3600 },
@@ -196,7 +201,7 @@ export function sampleOliveTreehouse(): Project {
     name: "Ηλιακός θερμοσίφωνας",
     material: "Solar heater",
     thickness: 110,
-    elevation: DECK_TOP + 110,
+    elevation: deckTop + 110,
     points: [
       { x: southMid.x - 1100, y: southMid.y + 400 },
       { x: southMid.x + 1100, y: southMid.y + 400 },
@@ -213,7 +218,7 @@ export function sampleOliveTreehouse(): Project {
       name: `Φωτοβολταϊκό ${i + 1}`,
       material: "PV panel",
       thickness: 40,
-      elevation: DECK_TOP + 80,
+      elevation: deckTop + 80,
       points: [
         { x: x0, y: southMid.y + 1900 },
         { x: x0 + 1720, y: southMid.y + 1900 },
@@ -233,7 +238,7 @@ export function sampleOliveTreehouse(): Project {
       b,
       thickness: 15,
       height: 2030,
-      base: DECK_TOP,
+      base: deckTop,
       material: "Plexiglass",
       ifc: "IfcPlate",
     });
@@ -260,7 +265,7 @@ export function sampleOliveTreehouse(): Project {
       b: n,
       thickness: 8,
       height: 2030,
-      base: DECK_TOP,
+      base: deckTop,
       material: "Silver curtain",
       ifc: "IfcCovering",
     });
@@ -280,25 +285,34 @@ export function sampleOliveTreehouse(): Project {
 
   const sideM = SIDE / 1000;
   const radiusM = R / 1000;
-  const lines: [number, number, number, string][] = [
-    [-R - 500, -R - 1800, 240, "ΔΕΝΤΡΟΣΠΙΤΟ · ΚΑΝΟΝΙΚΟ ΠΕΝΤΑΓΩΝΟ · Κ.Μ. 257"],
-    [-R - 500, -R - 2300, 150, `Πλευρά ${sideM.toFixed(2)} m = δύο δοκοί των 6,00 m. Ακτίνα ${radiusM.toFixed(2)} m. Εσωτερική γωνία 108°.`],
-    [-R - 500, -R - 2750, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
-    [-R - 500, -R - 3150, 140, "Δέκα ελιές: πέντε στις κορυφές, πέντε στη μέση κάθε πλευράς. Κάθαρση 2,00 m."],
-    [-R - 500, -R - 3550, 140, "Ραμποτέ 20×200 στο πεντάγωνο. Πλέξιγκλας στις πλευρές, ασημί κουρτίνα από μέσα."],
-    [-R - 500, -R - 3950, 140, "Τζακούζι στη βόρεια κορυφή. Ηλιακός και φωτοβολταϊκά προς το νότιο όριο."],
-  ];
+  const lines: [number, number, number, string][] = iron
+    ? [
+        [-R - 500, -R - 1800, 280, "IRON OLIVE TREE GREENHOUSE VILLA"],
+        [-R - 500, -R - 2300, 150, "Κανονικό πεντάγωνο. Πλευρά 12,00 m. Εσωτερική γωνία 108°."],
+        [-R - 500, -R - 2750, 140, "Δοκοί ΗΕΑ 220, χάλυβας S235, δύο τεμάχια των 6,00 m σε κάθε πλευρά."],
+        [-R - 500, -R - 3150, 140, "Δάπεδο από λαμαρίνα. Όχι ξύλο. Ελιές ως κολόνες. Υαλοπίνακας θερμοκηπίου."],
+        [-R - 500, -R - 3550, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
+      ]
+    : [
+        [-R - 500, -R - 1800, 240, "ΔΕΝΤΡΟΣΠΙΤΟ · ΚΑΝΟΝΙΚΟ ΠΕΝΤΑΓΩΝΟ · Κ.Μ. 257"],
+        [-R - 500, -R - 2300, 150, `Πλευρά ${sideM.toFixed(2)} m = δύο δοκοί των 6,00 m. Ακτίνα ${radiusM.toFixed(2)} m. Εσωτερική γωνία 108°.`],
+        [-R - 500, -R - 2750, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
+        [-R - 500, -R - 3150, 140, "Δέκα ελιές: πέντε στις κορυφές, πέντε στη μέση κάθε πλευράς. Κάθαρση 2,00 m."],
+        [-R - 500, -R - 3550, 140, "Ραμποτέ 20×200 στο πεντάγωνο. Πλέξιγκλας στις πλευρές, ασημί κουρτίνα από μέσα."],
+        [-R - 500, -R - 3950, 140, "Τζακούζι στη βόρεια κορυφή. Ηλιακός και φωτοβολταϊκά προς το νότιο όριο."],
+      ];
   lines.forEach(([x, y, size, text], i) => {
     push({ id: `note-${i}`, kind: "text", layerId: "notes", p: { x, y }, text, size, rotation: 0 });
   });
 
   return {
-    id: "olive-treehouse-marmarades",
-    name: "Δεντρόσπιτο Μαρμαράδες",
+    id: iron ? "iron-olive-greenhouse-villa" : "olive-treehouse-marmarades",
+    name: iron ? "Iron Olive Tree Greenhouse Villa" : "Δεντρόσπιτο Μαρμαράδες",
     discipline: "architecture",
     units: "m",
-    description:
-      "Regular pentagon, side 12 m as two 6 m beams, on ten olive trunks at the centre of the Marmarades field. Rabote deck, plexiglass, silver curtains, jacuzzi, solar heater, PV.",
+    description: iron
+      ? "Iron Olive Tree Greenhouse Villa. Same pentagon on the olive trunks. HEA 220 beams and an iron-sheet floor instead of timber."
+      : "Regular pentagon, side 12 m as two 6 m beams, on ten olive trunks at the centre of the Marmarades field. Rabote deck, plexiglass, silver curtains, jacuzzi, solar heater, PV.",
     layers: defaultLayers("architecture"),
     entities,
     wallHeight: 2030,
