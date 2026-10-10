@@ -4,7 +4,7 @@ import { useCad } from "@/lib/cad/store";
 import { exportJson } from "@/lib/cad/export";
 import { exportDxf, importDxf } from "@/lib/cad/dxf";
 import { installAllServices, installService } from "@/lib/cad/services";
-import { raiseBuilding, raiseFilm, raiseFilmStatus } from "@/lib/billing/api";
+import { raiseBuilding } from "@/lib/billing/api";
 import { Viewport2D } from "./Viewport2D";
 import { ViewportGlobe } from "./ViewportGlobe";
 import { YearTimeline } from "./YearTimeline";
@@ -126,11 +126,11 @@ export function Work() {
 function Architect() {
   const images = useCad((s) => s.aiImages);
   const videos = useCad((s) => s.aiVideos);
-  const [note, setNote] = useState("The finished pentagon treehouse, on the real olive field, at the centre of the plot.");
+  const [note, setNote] = useState("Σιδερένιο διώροφο δεντρόσπιτο, ίδια μορφή με το ξύλινο. Ανοιχτό κατάστρωμα από λαμαρίνα σε κολόνες Η με πέλματα, γυάλινος όροφος, τζακούζι και φωτοβολταϊκά στη στέγη. Όχι ισόγειο θερμοκήπιο.");
   const [sheet, setSheet] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
 
-  const make = async () => {
+  const makePicture = async () => {
     if (busy) return;
     setBusy(true);
     try {
@@ -143,21 +143,6 @@ function Architect() {
       if (Array.isArray(res.ops) && res.ops.length) useCad.getState().applyAi(res.ops as never);
       if (res.photoUrl) useCad.getState().pushAiMedia("images", res.photoUrl);
       toast.success(res.message);
-      if (res.photoUrl) {
-        const started = await raiseFilm({ data: { photoUrl: res.photoUrl, prompt: res.photoPrompt || note, spacenet } });
-        if (started.ok && "requestId" in started) {
-          for (let i = 0; i < 24; i++) {
-            await new Promise((r) => setTimeout(r, 4000));
-            const row = await raiseFilmStatus({ data: { requestId: started.requestId } });
-            if (row.url) {
-              useCad.getState().pushAiMedia("videos", row.url);
-              toast.success("The film is at the top.");
-              break;
-            }
-            if (row.status === "failed" || row.status === "expired") break;
-          }
-        }
-      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
@@ -165,12 +150,57 @@ function Architect() {
     }
   };
 
+  const makeFilm = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await anotherVideo(note);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const renders = images.filter((src) => !src.includes("iron-plan") && !src.includes("iron-elev") && !src.includes("pentagon-plan"));
+  const clips = videos.length ? videos : ["/marmarades/iron-villa.mp4?v=3"];
+  const drawings = [
+    { src: "/marmarades/iron-plan.jpg?v=3", title: "Κάτοψη · σιδερένιο διώροφο δεντρόσπιτο" },
+    { src: "/marmarades/iron-elev.jpg?v=3", title: "Όψη · κατάστρωμα, όροφος, στέγη" },
+  ];
+
   return (
     <section>
       <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">01 — ARCHITECT</p>
       <h2 className="mt-2 text-xl font-medium">The AI</h2>
-      <p className="mt-2 text-sm text-muted">Drop the photographs and the notes of the place. It makes the pictures and the film of the finished work, on the real ground.</p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <p className="mt-2 text-sm text-muted">Γράψε τη διόρθωση και φτιάξε νέα εικόνα ή νέο βίντεο. Το έτοιμο φιλμ του σιδερένιου διώροφου είναι από κάτω.</p>
+      <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="mt-4 w-full rounded-sm bg-elevated px-3 py-2 text-sm outline-none" />
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button type="button" disabled={busy} onClick={() => void makePicture()} className="h-12 rounded-sm bg-primary px-3 text-sm text-primary-fg disabled:opacity-40">
+          {busy ? "…" : "Νέα εικόνα"}
+        </button>
+        <button type="button" disabled={busy} onClick={() => void makeFilm()} className="h-12 rounded-sm bg-primary px-3 text-sm text-primary-fg disabled:opacity-40">
+          {busy ? "…" : "Νέο βίντεο"}
+        </button>
+      </div>
+      <div className="mt-4 flex flex-col gap-3">
+        {clips.map((src) => (
+          <video key={src} src={src} controls playsInline preload="metadata" className="aspect-video w-full rounded-sm bg-black" />
+        ))}
+        {renders.map((src) => (
+          <img key={src} src={src} alt="Finished project" className="w-full rounded-sm object-cover" />
+        ))}
+      </div>
+      <div className="mt-8">
+        <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">ΑΡΧΙΤΕΚΤΟΝΙΚΑ ΣΧΕΔΙΑ</p>
+        <div className="mt-3 flex flex-col gap-4">
+          {drawings.map((d) => (
+            <figure key={d.src}>
+              <img src={d.src} alt={d.title} className="w-full rounded-sm border border-border bg-white" />
+              <figcaption className="mt-1 text-xs text-muted">{d.title}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <button type="button" onClick={() => useCad.getState().loadProject(sampleOliveTreehouse("timber"))} className="overflow-hidden rounded-sm border border-border text-left">
           <img src="/marmarades/pentagon-aerial.jpg?v=2" alt="Timber pentagon treehouse" className="h-36 w-full object-cover" />
           <span className="block px-2 py-2 text-xs">Pentagon olive treehouse · timber</span>
@@ -179,14 +209,6 @@ function Architect() {
           <img src="/marmarades/iron-villa.jpg?v=3" alt="Σιδερένιο διώροφο δεντρόσπιτο" className="h-36 w-full object-cover" />
           <span className="block px-2 py-2 text-xs">Σιδερένιο διώροφο δεντρόσπιτο</span>
         </button>
-      </div>
-      <div className="mt-4 flex gap-2 overflow-x-auto">
-        {images.map((src) => (
-          <img key={src} src={src} alt="Finished project" className="h-44 w-auto shrink-0 rounded-sm object-cover" />
-        ))}
-        {videos.map((src) => (
-          <video key={src} src={src} poster="/marmarades/house.jpg" controls playsInline className="h-44 w-auto shrink-0 rounded-sm bg-black" />
-        ))}
       </div>
       <label className="mt-4 flex h-12 cursor-pointer items-center justify-center rounded-sm border border-dashed border-border text-sm text-muted">
         {sheet ? "Photograph ready" : "Drop photographs of the project"}
@@ -207,15 +229,6 @@ function Architect() {
           }}
         />
       </label>
-      <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="mt-3 w-full rounded-sm bg-elevated px-3 py-2 text-sm outline-none" />
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" disabled={busy} onClick={() => void make()} className="h-11 rounded-sm bg-primary px-4 text-sm text-primary-fg disabled:opacity-40">
-          {busy ? "Making it…" : "Picture and film"}
-        </button>
-        <button type="button" onClick={() => void anotherVideo(note)} className="h-11 rounded-sm bg-elevated px-4 text-sm">
-          Another film
-        </button>
-      </div>
       <Field scope="Architect" placeholder="Change the vision. Say what the finished place should be." />
       <Exchange />
     </section>

@@ -82,12 +82,15 @@ function takeLocal(op: AiOp): boolean {
   return false;
 }
 
-export async function anotherVideo(prompt: string) {
+export async function anotherVideo(prompt: string, photoUrl?: string) {
   const text = prompt.trim();
   if (!text) return;
-  const photoUrl = new URL("/marmarades/house.jpg", window.location.origin).href;
+  const images = useCad.getState().aiImages;
+  const fromGallery = images.find((src) => src.includes("iron-villa") && !src.includes("plan") && !src.includes("elev"));
+  const chosen = photoUrl || fromGallery || "/marmarades/iron-villa.jpg";
+  const absolute = chosen.startsWith("http") || chosen.startsWith("data:") ? chosen : new URL(chosen, window.location.origin).href;
   const spacenet = localStorage.getItem("astranov-spacenet") === "1";
-  const started = await raiseFilm({ data: { photoUrl, prompt: text, spacenet } });
+  const started = await raiseFilm({ data: { photoUrl: absolute.startsWith("data:") ? new URL("/marmarades/iron-villa.jpg", window.location.origin).href : absolute, prompt: text, spacenet } });
   if (!started.ok || !("requestId" in started)) {
     toast.error("error" in started ? started.error : "Το βίντεο δεν ξεκίνησε.");
     return;
