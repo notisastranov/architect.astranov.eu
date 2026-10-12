@@ -12,6 +12,7 @@ import { accessState } from "@/lib/billing/api";
 import { BrandMark } from "./Mark";
 import { commitPolyline } from "./Viewport2D";
 import { Work } from "./Work";
+import { Welcome } from "./Welcome";
 import type { Tool } from "@/lib/cad/types";
 
 const KEY_TOOLS: Record<string, Tool> = {
@@ -36,6 +37,8 @@ export function Studio() {
   const helpOpen = useCad((s) => s.helpOpen);
   const [posterOpen, setPosterOpen] = useState(false);
   const [dossier, setDossier] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const { user, isPending } = useCurrentUserState();
 
   useEffect(() => {
     const r = useCad.persist.rehydrate() as void | Promise<void>;
@@ -101,6 +104,15 @@ export function Studio() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("from") === "spacenet") setEntered(true);
+  }, []);
+
+  if (!user && !entered) {
+    if (isPending) return <div className="min-h-dvh bg-bg" />;
+    return <Welcome onEnter={() => setEntered(true)} />;
+  }
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-fg">

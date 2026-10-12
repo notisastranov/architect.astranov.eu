@@ -73,15 +73,12 @@ export async function readAccess(userId: string) {
   };
 }
 
-/** Opens a paid hour or refuses. The creator is never charged. */
-export async function assertFinish(userId: string, spacenet: boolean): Promise<GateOk | GateNo> {
+/** Opens a paid hour or refuses. The creator is never charged. A signed-in user does not have to arrive from SpaceNet. */
+export async function assertFinish(userId: string, _spacenet: boolean): Promise<GateOk | GateNo> {
   const email = await emailOf(userId);
   const owner = isOwnerEmail(email, userId);
   const w = await wallet(userId, email);
   if (owner) return { ok: true, owner: true, balanceEur: eur(w.balance_cents), passUntil: w.pass_until };
-  if (!spacenet) {
-    return { ok: false, code: "spacenet", balanceEur: eur(w.balance_cents), hourEur: 33, passUntil: w.pass_until };
-  }
   if (passOpen(w.pass_until)) {
     return { ok: true, owner: false, balanceEur: eur(w.balance_cents), passUntil: w.pass_until };
   }
