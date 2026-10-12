@@ -14,6 +14,7 @@ import { Properties } from "./DockPanels";
 import { sampleOliveTreehouse } from "@/lib/cad/olive-house";
 import { talk, anotherVideo } from "./ai-talk";
 import { LandSurvey } from "./LandSurvey";
+import { Merides } from "./Merides";
 
 function Field({ scope, placeholder }: { scope: string; placeholder: string }) {
   const [text, setText] = useState("");
@@ -333,6 +334,7 @@ function Topo() {
       <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">03 — TOPO</p>
       <h2 className="mt-2 text-xl font-medium">The land</h2>
       <p className="mt-2 text-sm text-muted">Παλιές εικόνες της γης, όλες οι πλευρές και οι γωνίες του πολυγώνου, και μέτρηση με το ποντίκι στο σημείο που δείχνεις.</p>
+      <Merides />
       <LandSurvey />
       {overlays.length === 0 ? (
         <p className="mt-4 text-sm text-muted">No imported sheet is in this browser. Import it again under the map. From now on it is kept.</p>
