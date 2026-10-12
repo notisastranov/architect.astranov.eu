@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { authClient, authEnabled, signIn } from "@/lib/auth/client";
 
-const SPACENET = "https://spacenet.astranov.eu";
+const SPACENET = "https://astranov.eu";
 
 export function Welcome({ onEnter }: { onEnter: () => void }) {
   const [mode, setMode] = useState<"in" | "up" | null>(null);
@@ -38,7 +38,7 @@ export function Welcome({ onEnter }: { onEnter: () => void }) {
       <header className="flex items-center justify-between px-5 py-4">
         <span className="text-sm font-medium">Astranov Architect</span>
         <a href={SPACENET} className="text-xs text-muted underline">
-          spacenet.astranov.eu
+          SpaceNet · astranov.eu
         </a>
       </header>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-5 pb-16">
@@ -47,7 +47,8 @@ export function Welcome({ onEnter }: { onEnter: () => void }) {
           <h1 className="mt-2 text-3xl font-medium tracking-tight">The treehouse, drawn.</h1>
           <p className="mt-3 max-w-xl text-sm text-muted">
             Γράψε το όνομα και μπαίνεις κατευθείαν. Με Google, με λογαριασμό Astranov, ή από το SpaceNet.
-            Το δεντρόσπιτο είναι η δημόσια επίδειξη. Η γη μένει κλειστή.
+            Το δεντρόσπιτο είναι η δημόσια επίδειξη. Η γη μένει κλειστή. Ο τόπος spacenet.astranov.eu
+            δεν έχει ακόμα DNS· μέχρι να δεθεί το όνομα, το SpaceNet απαντά στο astranov.eu.
           </p>
         </div>
         <video src="/marmarades/iron-villa.mp4?v=3" controls playsInline preload="metadata" className="aspect-video w-full rounded-sm bg-black" />
