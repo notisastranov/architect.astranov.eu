@@ -112,14 +112,16 @@ function readImage(file: File): Promise<string> {
   });
 }
 
-export function Work() {
+export function Work({ dossier = false }: { dossier?: boolean }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto flex max-w-3xl flex-col gap-16 px-4 py-8 sm:px-6">
-        <p className="text-sm text-muted">Three fields. The vision, then the building, then the land.</p>
+        <p className="text-sm text-muted">
+          {dossier ? "The treehouse stays public. The land underneath is yours alone." : "The treehouse. The vision, then the building."}
+        </p>
         <Architect />
         <Bim />
-        <Topo />
+        {dossier && <Topo />}
       </div>
     </div>
   );
@@ -173,7 +175,7 @@ function Architect() {
     <section>
       <p className="font-mono text-[10px] tracking-[0.18em] text-subtle">01 — ARCHITECT</p>
       <h2 className="mt-2 text-xl font-medium">The AI</h2>
-      <p className="mt-2 text-sm text-muted">Από την εικόνα και τα στοιχεία που ήδη υπάρχουν. Από κάτω το σχέδιο, μετά η γη.</p>
+      <p className="mt-2 text-sm text-muted">Από την εικόνα και τα στοιχεία που ήδη υπάρχουν. Από κάτω το σχέδιο του δεντρόσπιτου.</p>
       <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="mt-4 w-full rounded-sm bg-elevated px-3 py-2 text-sm outline-none" />
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button type="button" disabled={busy} onClick={() => void makePicture()} className="h-12 rounded-sm bg-primary px-3 text-sm text-primary-fg disabled:opacity-40">

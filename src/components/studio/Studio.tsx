@@ -5,6 +5,10 @@ import { cn } from "@/lib/utils";
 import { useCad, adoptSession } from "@/lib/cad/store";
 import { SAMPLE_CATALOG } from "@/lib/cad/samples";
 import { exportSurveyCsv, exportSvg } from "@/lib/cad/export";
+import { sampleOliveTreehouse } from "@/lib/cad/olive-house";
+import { authEnabled, signIn } from "@/lib/auth/client";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { accessState } from "@/lib/billing/api";
 import { BrandMark } from "./Mark";
 import { commitPolyline } from "./Viewport2D";
 import { Work } from "./Work";
@@ -31,6 +35,7 @@ export function Studio() {
   const projectsOpen = useCad((s) => s.projectsOpen);
   const helpOpen = useCad((s) => s.helpOpen);
   const [posterOpen, setPosterOpen] = useState(false);
+  const [dossier, setDossier] = useState(false);
 
   useEffect(() => {
     const r = useCad.persist.rehydrate() as void | Promise<void>;
@@ -99,8 +104,8 @@ export function Studio() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-fg">
-      <TopBar />
-      <Work />
+      <TopBar dossier={dossier} onDossier={setDossier} />
+      <Work dossier={dossier} />
       {projectsOpen && <ProjectsOverlay onPoster={() => setPosterOpen(true)} />}
       {helpOpen && <HelpOverlay />}
       {posterOpen && <PosterOverlay onClose={() => setPosterOpen(false)} />}
@@ -108,9 +113,62 @@ export function Studio() {
   );
 }
 
-function TopBar() {
+function TopBar({ dossier, onDossier }: { dossier: boolean; onDossier: (open: boolean) => void }) {
   const undo = useCad((s) => s.undo);
   const redo = useCad((s) => s.redo);
+  const { user } = useCurrentUserState();
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("from") === "spacenet") localStorage.setItem("astranov-spacenet", "1");
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const fromNet = new URLSearchParams(window.location.search).get("from") === "spacenet";
+    if (!fromNet) return;
+    void accessState()
+      .then((row) => {
+        if (!row.owner) return;
+        const id = useCad.getState().project.id;
+        const frame = id === "iron-olive-greenhouse-villa" ? "iron" : "timber";
+        useCad.getState().loadProject(sampleOliveTreehouse(frame, true));
+        onDossier(true);
+      })
+      .catch(() => undefined);
+  }, [user, onDossier]);
+
+  const openDossier = async () => {
+    if (dossier) {
+      const id = useCad.getState().project.id;
+      const frame = id === "iron-olive-greenhouse-villa" ? "iron" : "timber";
+      useCad.getState().loadProject(sampleOliveTreehouse(frame, false));
+      onDossier(false);
+      return;
+    }
+    if (!user) {
+      if (!authEnabled) {
+        toast.error("Η είσοδος δεν είναι ανοιχτή σε αυτή την προβολή.");
+        return;
+      }
+      await signIn("grok-google", { callbackURL: "/?from=spacenet" });
+      return;
+    }
+    try {
+      const row = await accessState();
+      if (!row.owner) {
+        toast.error("Αυτός ο λογαριασμός δεν έχει ιδιωτικό φάκελο.");
+        return;
+      }
+      const id = useCad.getState().project.id;
+      const frame = id === "iron-olive-greenhouse-villa" ? "iron" : "timber";
+      useCad.getState().loadProject(sampleOliveTreehouse(frame, true));
+      onDossier(true);
+    } catch {
+      toast.error("Μπες με Google. Από το SpaceNet, ή από εδώ.");
+    }
+  };
+
   return (
     <header className="flex shrink-0 items-center gap-2 border-b border-border bg-bg px-3 py-2">
       <button type="button" onClick={() => useCad.getState().setProjectsOpen(true)} className="flex min-w-0 items-center gap-2 text-left">
@@ -121,6 +179,9 @@ function TopBar() {
         </span>
       </button>
       <div className="ml-auto flex items-center">
+        <button type="button" onClick={() => void openDossier()} className={`mr-1 h-9 rounded-sm px-2 text-xs ${dossier ? "bg-primary text-primary-fg" : "text-muted hover:bg-elevated"}`}>
+          Ιδιωτικό
+        </button>
         <IconBtn label="Undo" onClick={undo}><Undo2 className="size-4" /></IconBtn>
         <IconBtn label="Redo" onClick={redo}><Redo2 className="size-4" /></IconBtn>
       </div>

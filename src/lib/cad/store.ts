@@ -565,8 +565,12 @@ function toolStatus(t: Tool): string {
 export function adoptSession() {
   if (typeof localStorage === "undefined") return;
   const cur = useCad.getState();
-  const project =
+  const base =
     cur.project.id === "iron-olive-greenhouse-villa" ? sampleOliveTreehouse("iron") : cur.project;
+  const project = {
+    ...base,
+    entities: base.entities.filter((e) => e.id !== "km257" && !e.id.startsWith("km-")),
+  };
   let entities = project.entities;
   let overlays = cur.overlays;
   if (localStorage.getItem("astranov-legacy-merged") !== "1") {

@@ -82,3 +82,30 @@ export const finishGate = createServerFn({ method: "POST" })
     const { assertFinish } = await import("./gate.server");
     return assertFinish(context.userId, data.spacenet);
   });
+
+const PRIVATE_SHEETS = [
+  "merides/merida-250-1923.jpg",
+  "merides/merida-256-1923.jpg",
+  "merides/merida-257-1923.jpg",
+  "merides/merida-257A-1980.jpg",
+  "merides/merida-257B-2008.jpg",
+  "merides/topo-256-2025.jpg",
+  "merides/topo-257-2024.jpg",
+  "topo.jpg",
+  "ortho.png",
+  "topo.pdf",
+] as const;
+
+export const privateSheet = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => z.object({ name: z.enum(PRIVATE_SHEETS) }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { readAccess } = await import("./gate.server");
+    const access = await readAccess(context.userId);
+    if (!access.owner) return { ok: false as const };
+    const { loadSheet } = await import("./private-sheets.server");
+    const sheet = loadSheet(data.name);
+    if (!sheet) return { ok: false as const };
+    return { ok: true as const, dataUrl: `data:${sheet.mime};base64,${sheet.b64}` };
+  });
+

@@ -86,7 +86,7 @@ function beam(
   };
 }
 
-export function sampleOliveTreehouse(frame: "timber" | "iron" = "timber"): Project {
+export function sampleOliveTreehouse(frame: "timber" | "iron" = "timber", land = false): Project {
   const iron = frame === "iron";
   const beamDepth = iron ? 210 : OLIVE_D;
   const beamBreadth = 220;
@@ -100,28 +100,30 @@ export function sampleOliveTreehouse(frame: "timber" | "iron" = "timber"): Proje
   const entities: Entity[] = [];
   const push = (e: Entity) => entities.push(e);
 
-  push({
-    id: "km257",
-    kind: "polyline",
-    layerId: "site",
-    name: "Κ.Μ. 257",
-    closed: true,
-    points: RING.map(([e, n]) => fieldPt(e, n)),
-  });
-  RING.forEach(([e, n], i) => {
-    const p = fieldPt(e, n);
+  if (land) {
     push({
-      id: `km-${i + 1}`,
-      kind: "survey",
+      id: "km257",
+      kind: "polyline",
       layerId: "site",
-      name: String(i + 1),
-      e: p.x,
-      n: p.y,
-      z: 0,
-      code: String(i + 1),
-      desc: `Κορυφή ${i + 1} · Ε ${e.toFixed(3)} · Ν ${n.toFixed(3)}`,
+      name: "Κ.Μ. 257",
+      closed: true,
+      points: RING.map(([e, n]) => fieldPt(e, n)),
     });
-  });
+    RING.forEach(([e, n], i) => {
+      const p = fieldPt(e, n);
+      push({
+        id: `km-${i + 1}`,
+        kind: "survey",
+        layerId: "site",
+        name: String(i + 1),
+        e: p.x,
+        n: p.y,
+        z: 0,
+        code: String(i + 1),
+        desc: `Κορυφή ${i + 1} · Ε ${e.toFixed(3)} · Ν ${n.toFixed(3)}`,
+      });
+    });
+  }
 
   const verts = pentagon(R);
   const mids = verts.map((v, i) => midway(v, verts[(i + 1) % 5]!));
@@ -372,12 +374,12 @@ export function sampleOliveTreehouse(frame: "timber" | "iron" = "timber"): Proje
         [-R - 500, -R - 2750, 140, "Κάτω: ανοιχτό κατάστρωμα από λαμαρίνα, σε δοκούς ΗΕΑ 220. Κάθαρση 2,00 m."],
         [-R - 500, -R - 3150, 140, "Πάνω: γυάλινος όροφος με ασημί κουρτίνα. Στέγη από λαμαρίνα."],
         [-R - 500, -R - 3550, 140, "Στη στέγη: τζακούζι, ηλιακός, φωτοβολταϊκά. Πέλμα 560×560. Όχι εμπήξιμο."],
-        [-R - 500, -R - 3950, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
+        [-R - 500, -R - 3950, 140, "Κέντρο του ελαιώνα. Πεντάγωνο, πλευρά 12,00 m."],
       ]
     : [
-        [-R - 500, -R - 1800, 240, "ΔΕΝΤΡΟΣΠΙΤΟ · ΚΑΝΟΝΙΚΟ ΠΕΝΤΑΓΩΝΟ · Κ.Μ. 257"],
+        [-R - 500, -R - 1800, 240, "ΔΕΝΤΡΟΣΠΙΤΟ · ΚΑΝΟΝΙΚΟ ΠΕΝΤΑΓΩΝΟ"],
         [-R - 500, -R - 2300, 150, `Πλευρά ${sideM.toFixed(2)} m = δύο δοκοί των 6,00 m. Ακτίνα ${radiusM.toFixed(2)} m. Εσωτερική γωνία 108°.`],
-        [-R - 500, -R - 2750, 140, "Κέντρο ΕΓΣΑ ’87  Ε 878647,887   Ν 4034931,433  ·  36,38752° Β  28,22250° Α"],
+        [-R - 500, -R - 2750, 140, "Κάθαρση από το έδαφος 2,00 m. Χωρίς τοιχοποιία."],
         [-R - 500, -R - 3150, 140, "Δέκα ελιές: πέντε στις κορυφές, πέντε στη μέση κάθε πλευράς. Κάθαρση 2,00 m."],
         [-R - 500, -R - 3550, 140, "Ραμποτέ 20×200 στο πεντάγωνο. Πλέξιγκλας στις πλευρές, ασημί κουρτίνα από μέσα."],
         [-R - 500, -R - 3950, 140, "Τζακούζι στη βόρεια κορυφή. Ηλιακός και φωτοβολταϊκά προς το νότιο όριο."],

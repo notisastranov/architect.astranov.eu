@@ -3,7 +3,7 @@ import { DEV_USER_ID, authConfigured } from "@/lib/auth/verify.server";
 
 export const HOUR_CENTS = 3300;
 
-const OWNERS = new Set(["notisastranov@gmail.com", "info@astranov.eu"]);
+const OWNERS = new Set(["notisastranov@gmail.com", "info@astranov.eu", "notiscs@gmail.com"]);
 
 export type GateOk = { ok: true; owner: boolean; balanceEur: number; passUntil: string | null };
 export type GateNo = {

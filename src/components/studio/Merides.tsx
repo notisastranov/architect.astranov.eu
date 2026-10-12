@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { privateSheet } from "@/lib/billing/api";
 
 const KM257: [number, number][] = [
   [878582.094, 4034923.1835],
@@ -50,14 +51,14 @@ const SERVITUDE: [number, number][] = [
 ];
 
 const SHEETS = [
-  { id: "m257", name: "257, ιταλικό", src: "/marmarades/merides/merida-257-1923.jpg" },
-  { id: "m256", name: "256, ιταλικό 1923", src: "/marmarades/merides/merida-256-1923.jpg" },
-  { id: "m250", name: "250, ιταλικό 1923", src: "/marmarades/merides/merida-250-1923.jpg" },
-  { id: "m257a", name: "257Α, 1980", src: "/marmarades/merides/merida-257A-1980.jpg" },
-  { id: "m257b", name: "257Β, 2008", src: "/marmarades/merides/merida-257B-2008.jpg" },
-  { id: "t257", name: "257, 10.04.2024", src: "/marmarades/merides/topo-257-2024.jpg" },
-  { id: "t256", name: "256 και 256Α, 06.05.2025", src: "/marmarades/merides/topo-256-2025.jpg" },
-];
+  { id: "m257", name: "257, ιταλικό", file: "merides/merida-257-1923.jpg" },
+  { id: "m256", name: "256, ιταλικό 1923", file: "merides/merida-256-1923.jpg" },
+  { id: "m250", name: "250, ιταλικό 1923", file: "merides/merida-250-1923.jpg" },
+  { id: "m257a", name: "257Α, 1980", file: "merides/merida-257A-1980.jpg" },
+  { id: "m257b", name: "257Β, 2008", file: "merides/merida-257B-2008.jpg" },
+  { id: "t257", name: "257, 10.04.2024", file: "merides/topo-257-2024.jpg" },
+  { id: "t256", name: "256 και 256Α, 06.05.2025", file: "merides/topo-256-2025.jpg" },
+] as const;
 
 function ring(pts: [number, number][], ox: number, oy: number, k: number) {
   return (
@@ -70,9 +71,24 @@ function ring(pts: [number, number][], ox: number, oy: number, k: number) {
 export function Merides() {
   const [on, setOn] = useState<Record<string, boolean>>({ t256: true, m257: true });
   const [fade, setFade] = useState(0.55);
+  const [urls, setUrls] = useState<Record<string, string>>({});
   const ox = 878560;
   const oy = 4035005;
   const k = 1.35;
+
+  useEffect(() => {
+    let dead = false;
+    for (const sheet of SHEETS) {
+      if (!on[sheet.id] || urls[sheet.id]) continue;
+      void privateSheet({ data: { name: sheet.file } }).then((res) => {
+        if (dead || !res.ok) return;
+        setUrls((cur) => ({ ...cur, [sheet.id]: res.dataUrl }));
+      });
+    }
+    return () => {
+      dead = true;
+    };
+  }, [on, urls]);
 
   return (
     <div className="mt-4 space-y-3">
@@ -113,10 +129,10 @@ export function Merides() {
         <input type="range" min={0.2} max={1} step={0.05} value={fade} onChange={(e) => setFade(Number(e.target.value))} className="w-full" />
       </label>
       <div className="relative min-h-48 overflow-hidden rounded-sm border border-border bg-bg">
-        {SHEETS.filter((s) => on[s.id]).map((s, i) => (
+        {SHEETS.filter((s) => on[s.id] && urls[s.id]).map((s, i) => (
           <img
             key={s.id}
-            src={s.src}
+            src={urls[s.id]}
             alt={s.name}
             className="w-full object-contain"
             style={{ opacity: i === 0 ? 1 : fade }}
