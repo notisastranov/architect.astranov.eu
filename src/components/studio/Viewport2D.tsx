@@ -407,7 +407,17 @@ function handleClick(world: Pt, shift: boolean) {
     return;
   }
   if (tool === "measure" && points.length >= 2) {
-    st.setDraft({ tool, points: [] });
+    const a = points[0]!;
+    const b = points[1]!;
+    finish({
+      id: nid("dim"),
+      kind: "dim",
+      layerId: defaultLayer(st, "dims", "notes"),
+      a,
+      b,
+      offset: st.project.discipline === "mechanical" ? 16 : 600,
+    });
+    st.setStatus(`Measured and saved as dimension.`);
     return;
   }
   if (tool === "text") {
